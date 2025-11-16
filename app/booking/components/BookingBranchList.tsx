@@ -26,8 +26,20 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
   return (
     <div className="grid gap-3">
       {branches.map((branch) => {
-        const waNumber = (branch.phone || '').replace(/[^0-9]/g, '')
-        const waLink = waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo, saya tertarik dengan layanan bengkel Anda.')}` : ''
+        const rawPhone = (branch.phone || '').trim()
+        const digitsOnly = rawPhone.replace(/[^0-9]/g, '')
+        let normalized = digitsOnly
+        if (digitsOnly.startsWith('0')) {
+          normalized = `62${digitsOnly.slice(1)}`
+        } else if (digitsOnly.startsWith('8')) {
+          normalized = `62${digitsOnly}`
+        }
+        // Validasi sederhana: mulai dengan 62 dan panjang wajar (10-15)
+        const isValidWa = /^62[0-9]{8,13}$/.test(normalized)
+        const defaultMsg = `Halo, saya tertarik dengan layanan ${branch.name}.`
+        const waLink = isValidWa
+          ? `https://wa.me/${normalized}?text=${encodeURIComponent(defaultMsg)}`
+          : ''
         const mapsLink = branch.address
           ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name} ${branch.address}`)}`
           : ''
@@ -114,6 +126,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                     rel="noopener noreferrer"
                     className="inline-flex items-center rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white hover:bg-green-600"
                     aria-label="Hubungi via WhatsApp"
+                    title={normalized}
                     onClick={(e) => e.stopPropagation()}
                   >
                     💬 WhatsApp
