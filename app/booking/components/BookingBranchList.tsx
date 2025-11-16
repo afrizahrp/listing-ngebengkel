@@ -39,7 +39,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
         return (
           <Card
             key={branch.id}
-            className="bg-white shadow-none border-0 rounded-xl transition hover:bg-blue-50/20 hover:ring-1 hover:ring-[#045693]/20 cursor-pointer"
+            className="bg-white shadow-none border-0 rounded-xl transition hover:bg-gray-50/60 hover:ring-1 hover:ring-gray-200 cursor-pointer"
             role="button"
             tabIndex={0}
             onClick={handleOpenDetail}
@@ -62,26 +62,47 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                   )}
                 </div>
               </div>
-              {branch.address && (
+              {(branch.address || branch.district) && (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">
                     {[branch.address, branch.district].filter(Boolean).join(' • ')}
                   </p>
+                  {mapsLink && (
+                    <a
+                      className="text-xs text-blue-600 hover:underline"
+                      href={mapsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Lihat lokasi di Google Maps
+                    </a>
+                  )}
                 </div>
               )}
             </CardHeader>
             <CardContent className="pt-2">
-              {mapsLink && (
-                <div className="mb-2">
-                  <a
-                    className="text-xs text-blue-600 hover:underline"
-                    href={mapsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Lihat lokasi di Google Maps
-                  </a>
+              {hasPromoOpen && (
+                <div className="mb-3 rounded-md bg-gray-100 p-3" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const p = (branch as any).promoPreview as {
+                      title?: string
+                      checklist?: string[]
+                    }
+                    const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
+                    return (
+                      <div className="text-sm text-foreground">
+                        <p className="font-medium">{p?.title ?? 'Promo'}</p>
+                        {checklist.length > 0 && (
+                          <ul className="mt-1 list-disc pl-5">
+                            {checklist.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
 
@@ -114,30 +135,6 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
               </div>
 
               <div className="mt-3 border-b border-gray-200" />
-
-              {hasPromoOpen && (
-                <div className="mt-3 rounded-md bg-primary/5 p-3" onClick={(e) => e.stopPropagation()}>
-                  {(() => {
-                    const p = (branch as any).promoPreview as {
-                      title?: string
-                      checklist?: string[]
-                    }
-                    const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
-                    return (
-                      <div className="text-sm text-foreground">
-                        <p className="font-medium">{p?.title ?? 'Promo'}</p>
-                        {checklist.length > 0 && (
-                          <ul className="mt-1 list-disc pl-5">
-                            {checklist.map((item, idx) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
             </CardContent>
           </Card>
         )

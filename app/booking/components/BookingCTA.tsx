@@ -85,21 +85,21 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
   }, [branches, searchTerm]);
 
   return (
-    <section className={variant === 'section' ? 'w-full bg-white py-12 text-[#045693]' : 'w-full rounded-3xl bg-background text-[#045693]'}>
+    <section className={variant === 'section' ? 'w-full bg-white py-12 text-[#2f2f2f]' : 'w-full rounded-3xl bg-background text-[#2f2f2f]'}>
       <div
         className={
           variant === 'section'
             ? 'mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 sm:px-6 lg:px-0'
-            : 'mx-auto flex w-full max-w-5xl flex-col gap-6 rounded-3xl border border-[#045693]/40 bg-background/95 px-6 py-8 shadow-xl sm:px-10 sm:py-10'
+            : 'mx-auto flex w-full max-w-5xl flex-col gap-6 rounded-3xl border border-gray-200 bg-background/95 px-6 py-8 shadow-xl sm:px-10 sm:py-10'
         }
       >
         <header className="space-y-2 text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Promo &amp; Bengkel</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Promo &amp; Bengkel</p>
           <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Temukan Bengkel Promo di Sekitar Anda</h1>
           <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, jenis layanan, atau kata kunci seperti “promo”.</p>
         </header>
 
-        <div className="rounded-xl border border-[#045693]/40 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <BookingSearchBar value={searchTerm} onChange={setSearchTerm} />
         </div>
 
