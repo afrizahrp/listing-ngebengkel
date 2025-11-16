@@ -12,6 +12,7 @@ export type BookingBranch = {
   district?: string | null;
   address?: string | null;
   phone?: string | null;
+  logo?: string | null;
   company: {
     id: string;
     name: string;

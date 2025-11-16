@@ -1,14 +1,27 @@
 'use client';
 import { useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { BookingBranch } from '@/types/booking'
 // Removed BookingSlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
 
 
+type PromoPreview = {
+  id?: string;
+  title?: string;
+  promoType?: string;
+  checklist?: string[] | null;
+} | null;
+
+type BranchItem = BookingBranch & {
+  typeName?: string | null;
+  promoPreview?: PromoPreview;
+};
+
 type BookingBranchListProps = {
-  branches: BookingBranch[];
-  onBranchClick?: (branch: BookingBranch) => void;
+  branches: BranchItem[];
+  onBranchClick?: (branch: BranchItem) => void;
 };
 
 export function BookingBranchList({ branches, onBranchClick }: BookingBranchListProps) {
@@ -47,7 +60,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
           onBranchClick?.(branch)
           router.push(`/workshop/${branch.id}`)
         }
-        const hasPromoOpen = openPromoId === branch.id && (branch as any).promoPreview
+        const hasPromoOpen = openPromoId === branch.id && branch.promoPreview
         return (
           <Card
             key={branch.id}
@@ -69,10 +82,21 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                   {branch.company?.name && (
                     <p className="text-sm text-muted-foreground">{branch.company.name}</p>
                   )}
-                  {(branch as any).typeName && (
-                    <p className="text-sm text-muted-foreground">{(branch as any).typeName}</p>
+                  {branch.typeName && (
+                    <p className="text-sm text-muted-foreground">{branch.typeName}</p>
                   )}
                 </div>
+                {branch.logo && (
+                  <div className="shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
+                    <Image
+                      src={branch.logo}
+                      alt={`${branch.name} logo`}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded object-cover ring-1 ring-gray-200"
+                    />
+                  </div>
+                )}
               </div>
               {(branch.address || branch.district) && (
                 <div className="space-y-1">
@@ -97,10 +121,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
               {hasPromoOpen && (
                 <div className="mb-3 rounded-md bg-gray-100 p-3" onClick={(e) => e.stopPropagation()}>
                   {(() => {
-                    const p = (branch as any).promoPreview as {
-                      title?: string
-                      checklist?: string[]
-                    }
+                    const p = branch.promoPreview
                     const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
                     return (
                       <div className="text-sm text-foreground">
@@ -132,7 +153,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                     💬 WhatsApp
                   </a>
                 )}
-                {(branch as any).promoPreview && (
+                {branch.promoPreview && (
                   <button
                     type="button"
                     onClick={(e) => {

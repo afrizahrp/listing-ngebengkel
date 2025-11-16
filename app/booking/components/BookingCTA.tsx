@@ -15,6 +15,7 @@ interface WaitingListListItem {
   address?: string | null;
   phone?: string | null;
   mobile?: string | null;
+  logo?: string | null;
   categoryId?: string | null;
   categoryName?: string | null;
   workshopTypes?: Array<{ id: string; name: string | null }>;
@@ -50,6 +51,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
         district: null,
         address: item.address ?? null,
         phone: item.phone ?? item.mobile ?? null,
+        logo: item.logo ?? null,
         company: { id: item.categoryId ?? 'UNKNOWN', name: item.categoryName ?? item.name },
         slots: [],
         typeName,
