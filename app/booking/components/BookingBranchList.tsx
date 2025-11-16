@@ -39,7 +39,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
         return (
           <Card
             key={branch.id}
-            className="border border-[#045693]/40 bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#045693] hover:shadow-md cursor-pointer"
+            className="bg-white shadow-none border-0 rounded-xl transition hover:bg-blue-50/20 hover:ring-1 hover:ring-[#045693]/20 cursor-pointer"
             role="button"
             tabIndex={0}
             onClick={handleOpenDetail}
@@ -48,7 +48,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
             }}
             aria-label={`Buka detail ${branch.name}`}
           >
-            <CardHeader className="flex flex-col gap-1 border-b border-[#045693]/40 pb-4">
+            <CardHeader className="flex flex-col gap-1 pb-2">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <CardTitle className="text-lg font-semibold text-foreground">
@@ -62,47 +62,26 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                   )}
                 </div>
               </div>
-              {(branch.address || branch.district) && (
+              {branch.address && (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">
                     {[branch.address, branch.district].filter(Boolean).join(' • ')}
                   </p>
-                  {mapsLink && (
-                    <a
-                      className="text-xs text-blue-600 hover:underline"
-                      href={mapsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Lihat lokasi di Google Maps
-                    </a>
-                  )}
                 </div>
               )}
             </CardHeader>
-            <CardContent className="pt-3">
-              {hasPromoOpen && (
-                <div className="rounded-md border border-[#045693]/30 bg-primary/5 p-3 mb-3" onClick={(e) => e.stopPropagation()}>
-                  {(() => {
-                    const p = (branch as any).promoPreview as {
-                      title?: string
-                      checklist?: string[]
-                    }
-                    const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
-                    return (
-                      <div className="text-sm text-foreground">
-                        <p className="font-medium">{p?.title ?? 'Promo'}</p>
-                        {checklist.length > 0 && (
-                          <ul className="mt-1 list-disc pl-5">
-                            {checklist.map((item, idx) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )
-                  })()}
+            <CardContent className="pt-2">
+              {mapsLink && (
+                <div className="mb-2">
+                  <a
+                    className="text-xs text-blue-600 hover:underline"
+                    href={mapsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Lihat lokasi di Google Maps
+                  </a>
                 </div>
               )}
 
@@ -133,6 +112,32 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                   </button>
                 )}
               </div>
+
+              <div className="mt-3 border-b border-gray-200" />
+
+              {hasPromoOpen && (
+                <div className="mt-3 rounded-md bg-primary/5 p-3" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const p = (branch as any).promoPreview as {
+                      title?: string
+                      checklist?: string[]
+                    }
+                    const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
+                    return (
+                      <div className="text-sm text-foreground">
+                        <p className="font-medium">{p?.title ?? 'Promo'}</p>
+                        {checklist.length > 0 && (
+                          <ul className="mt-1 list-disc pl-5">
+                            {checklist.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
             </CardContent>
           </Card>
         )

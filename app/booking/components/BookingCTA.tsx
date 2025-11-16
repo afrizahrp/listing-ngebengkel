@@ -61,23 +61,24 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
 
   const filteredBranches: ExtendedBranch[] = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase();
-    const askPromo = /\bpromo\b/.test(normalized);
+    const hasPromoKeyword = /\bpromo\b/.test(normalized);
+    const rest = normalized.replace(/\bpromo\b/g, '').trim();
+
     return branches.filter((b) => {
       const p = b.promoPreview;
-      const promoHit = !!(
-        p &&
-        [p.title]
-          .filter(Boolean)
-          .some((t) => String(t).toLowerCase().includes(normalized))
-      );
+      const hasPromo = Boolean(p);
+
+      // If user types 'promo' only → show all that have promo
+      if (hasPromoKeyword && rest.length === 0) return hasPromo;
+
       const textHit =
-        normalized.length === 0 ||
-        b.name.toLowerCase().includes(normalized) ||
-        (b.company?.name || '').toLowerCase().includes(normalized) ||
-        (b.typeName ? b.typeName.toLowerCase().includes(normalized) : false) ||
-        promoHit;
-      if (askPromo) {
-        return !!p && textHit;
+        rest.length === 0 ||
+        b.name.toLowerCase().includes(rest) ||
+        (b.company?.name || '').toLowerCase().includes(rest) ||
+        (b.typeName ? b.typeName.toLowerCase().includes(rest) : false);
+
+      if (hasPromoKeyword) {
+        return hasPromo && textHit;
       }
       return textHit;
     });
@@ -95,9 +96,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
         <header className="space-y-2 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Promo &amp; Bengkel</p>
           <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Temukan Bengkel Promo di Sekitar Anda</h1>
-          <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">
-            Ketik nama bengkel, jenis layanan, atau kata kunci seperti “promo”.
-          </p>
+          <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, jenis layanan, atau kata kunci seperti “promo”.</p>
         </header>
 
         <div className="rounded-xl border border-[#045693]/40 bg-white p-5 shadow-sm">
