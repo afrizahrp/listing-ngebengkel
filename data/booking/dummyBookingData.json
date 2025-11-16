@@ -1,0 +1,294 @@
+{
+  "branches": [
+    {
+      "id": "BRN0000001",
+      "name": "Ngebengkel Express - Mega Kuningan",
+      "city": "Jakarta",
+      "district": "Setiabudi",
+      "company": {
+        "id": "CMP01",
+        "name": "Ngebengkel Express"
+      },
+      "address": "Jl. Mega Kuningan Barat No. 12",
+      "phone": "+62-21-555-0192",
+      "slots": [
+        {
+          "id": "SLOT-JKT-0800",
+          "startTime": "08:00",
+          "endTime": "09:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-JKT-0900",
+          "startTime": "09:00",
+          "endTime": "10:00",
+          "isAvailable": false
+        },
+        {
+          "id": "SLOT-JKT-1000",
+          "startTime": "10:00",
+          "endTime": "11:00",
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "BRN0000004",
+      "name": "Ngebengkel Express - Kemang",
+      "city": "Jakarta",
+      "district": "Mampang Prapatan",
+      "company": {
+        "id": "CMP01",
+        "name": "Ngebengkel Express"
+      },
+      "address": "Jl. Kemang Raya No. 21",
+      "phone": "+62-21-700-3311",
+      "slots": [
+        {
+          "id": "SLOT-JKT-0830",
+          "startTime": "08:30",
+          "endTime": "09:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-JKT-1100",
+          "startTime": "11:00",
+          "endTime": "12:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-JKT-1500",
+          "startTime": "15:00",
+          "endTime": "16:00",
+          "isAvailable": false
+        }
+      ]
+    },
+    {
+      "id": "BRN0000005",
+      "name": "Ngebengkel Express - Pluit",
+      "city": "Jakarta",
+      "district": "Penjaringan",
+      "company": {
+        "id": "CMP01",
+        "name": "Ngebengkel Express"
+      },
+      "address": "Jl. Pluit Selatan No. 5",
+      "phone": "+62-21-888-4420",
+      "slots": [
+        {
+          "id": "SLOT-JKT-0730",
+          "startTime": "07:30",
+          "endTime": "08:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-JKT-0930",
+          "startTime": "09:30",
+          "endTime": "10:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-JKT-1330",
+          "startTime": "13:30",
+          "endTime": "14:30",
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "BRN0000002",
+      "name": "SpeedPro Garage - Pasteur",
+      "city": "Bandung",
+      "district": "Sukajadi",
+      "company": {
+        "id": "CMP02",
+        "name": "SpeedPro Garage"
+      },
+      "address": "Jl. Dr. Djunjunan No. 45",
+      "phone": "+62-22-700-8811",
+      "slots": [
+        {
+          "id": "SLOT-BDG-0800",
+          "startTime": "08:00",
+          "endTime": "09:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-BDG-0930",
+          "startTime": "09:30",
+          "endTime": "10:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-BDG-1100",
+          "startTime": "11:00",
+          "endTime": "12:00",
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "BRN0000006",
+      "name": "SpeedPro Garage - Dago",
+      "city": "Bandung",
+      "district": "Coblong",
+      "company": {
+        "id": "CMP02",
+        "name": "SpeedPro Garage"
+      },
+      "address": "Jl. Ir. H. Juanda No. 128",
+      "phone": "+62-22-765-2233",
+      "slots": [
+        {
+          "id": "SLOT-BDG-0830",
+          "startTime": "08:30",
+          "endTime": "09:30",
+          "isAvailable": false
+        },
+        {
+          "id": "SLOT-BDG-1030",
+          "startTime": "10:30",
+          "endTime": "11:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-BDG-1400",
+          "startTime": "14:00",
+          "endTime": "15:00",
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "BRN0000007",
+      "name": "SpeedPro Garage - Buah Batu",
+      "city": "Bandung",
+      "district": "Lengkong",
+      "company": {
+        "id": "CMP02",
+        "name": "SpeedPro Garage"
+      },
+      "address": "Jl. Buah Batu No. 77",
+      "phone": "+62-22-555-7700",
+      "slots": [
+        {
+          "id": "SLOT-BDG-0700",
+          "startTime": "07:00",
+          "endTime": "08:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-BDG-1200",
+          "startTime": "12:00",
+          "endTime": "13:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-BDG-1600",
+          "startTime": "16:00",
+          "endTime": "17:00",
+          "isAvailable": false
+        }
+      ]
+    },
+    {
+      "id": "BRN0000003",
+      "name": "Garage Kita - Darmo",
+      "city": "Surabaya",
+      "district": "Wonokromo",
+      "company": {
+        "id": "CMP03",
+        "name": "Garage Kita"
+      },
+      "address": "Jl. Raya Darmo No. 120",
+      "phone": "+62-31-555-4422",
+      "slots": [
+        {
+          "id": "SLOT-SBY-0830",
+          "startTime": "08:30",
+          "endTime": "09:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-SBY-1000",
+          "startTime": "10:00",
+          "endTime": "11:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-SBY-1430",
+          "startTime": "14:30",
+          "endTime": "15:30",
+          "isAvailable": false
+        }
+      ]
+    },
+    {
+      "id": "BRN0000008",
+      "name": "Garage Kita - Tunjungan",
+      "city": "Surabaya",
+      "district": "Genteng",
+      "company": {
+        "id": "CMP03",
+        "name": "Garage Kita"
+      },
+      "address": "Jl. Tunjungan No. 65",
+      "phone": "+62-31-777-9080",
+      "slots": [
+        {
+          "id": "SLOT-SBY-0730",
+          "startTime": "07:30",
+          "endTime": "08:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-SBY-1130",
+          "startTime": "11:30",
+          "endTime": "12:30",
+          "isAvailable": false
+        },
+        {
+          "id": "SLOT-SBY-1700",
+          "startTime": "17:00",
+          "endTime": "18:00",
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "BRN0000009",
+      "name": "Garage Kita - Rungkut",
+      "city": "Surabaya",
+      "district": "Rungkut",
+      "company": {
+        "id": "CMP03",
+        "name": "Garage Kita"
+      },
+      "address": "Jl. Raya Rungkut No. 88",
+      "phone": "+62-31-660-5544",
+      "slots": [
+        {
+          "id": "SLOT-SBY-0900",
+          "startTime": "09:00",
+          "endTime": "10:00",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-SBY-1230",
+          "startTime": "12:30",
+          "endTime": "13:30",
+          "isAvailable": true
+        },
+        {
+          "id": "SLOT-SBY-1500",
+          "startTime": "15:00",
+          "endTime": "16:00",
+          "isAvailable": false
+        }
+      ]
+    }
+  ]
+}
+
+
