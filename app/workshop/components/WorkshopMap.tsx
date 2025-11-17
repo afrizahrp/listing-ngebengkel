@@ -42,16 +42,6 @@ const defaultIcon = createIcon(
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
 );
 
-// Set default icon
-if (typeof window !== 'undefined') {
-  L.Icon.Default.prototype._getIconUrl = function (name: string) {
-    return {
-      icon: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadow: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    }[name] || '';
-  };
-}
-
 interface WorkshopMapProps {
   latitude?: number | string | null;
   longitude?: number | string | null;
