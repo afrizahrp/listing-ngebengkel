@@ -25,6 +25,8 @@
   --ring: 205 95% 29%;
   --yellow: #FFD700;
   --yellow-foreground: 0 0% 15%;
+  --badge-promo: 45 100% 51%;
+  --badge-promo-foreground: 0 0% 15%;
   --chart-1: 264 78% 44%;
   --chart-2: 162 55% 52%;
   --chart-3: 70 70% 60%;
@@ -62,6 +64,8 @@
   --ring: 205 95% 29%;
   --yellow: #FFD700;
   --yellow-foreground: 0 0% 15%;
+  --badge-promo: 45 100% 51%;
+  --badge-promo-foreground: 0 0% 15%;
   --chart-1: 41 90% 54%;
   --chart-2: 185 58% 49%;
   --chart-3: 228 53% 41%;

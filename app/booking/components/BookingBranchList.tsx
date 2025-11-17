@@ -1,7 +1,12 @@
 'use client';
 import { useState } from 'react'
 import Image from 'next/image'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardTitle } from '@/components/ui/card'
+import {Button} from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
 // Removed BookingSlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
@@ -37,7 +42,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 items-stretch">
       {branches.map((branch) => {
         const rawPhone = (branch.phone || '').trim()
         const digitsOnly = rawPhone.replace(/[^0-9]/g, '')
@@ -53,18 +58,24 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
         const waLink = isValidWa
           ? `https://wa.me/${normalized}?text=${encodeURIComponent(defaultMsg)}`
           : ''
-        const mapsLink = branch.address
-          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branch.name} ${branch.address}`)}`
-          : ''
         const handleOpenDetail = () => {
           onBranchClick?.(branch)
           router.push(`/workshop/${branch.id}`)
         }
-        const hasPromoOpen = openPromoId === branch.id && branch.promoPreview
+        const isPromoExpanded = openPromoId === branch.id && branch.promoPreview
+        const promo = branch.promoPreview
+        const checklist = Array.isArray(promo?.checklist) ? promo!.checklist! : []
+        
         return (
           <Card
             key={branch.id}
-            className="bg-white shadow-none border-0 rounded-xl transition hover:bg-gray-50/60 hover:ring-1 hover:ring-gray-200 cursor-pointer"
+            className={cn(
+              "group relative overflow-hidden transition-all duration-300",
+              "hover:shadow-lg hover:shadow-shadow-hover",
+              "border border-gray-100 bg-card",
+              "cursor-pointer",
+              "flex flex-col h-full"
+            )}
             role="button"
             tabIndex={0}
             onClick={handleOpenDetail}
@@ -73,103 +84,177 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
             }}
             aria-label={`Buka detail ${branch.name}`}
           >
-            <CardHeader className="flex flex-col gap-1 pb-2">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-foreground">
-                    {branch.name}
-                  </CardTitle>
-                  {branch.company?.name && (
-                    <p className="text-sm text-muted-foreground">{branch.company.name}</p>
-                  )}
-                  {branch.typeName && (
-                    <p className="text-sm text-muted-foreground">{branch.typeName}</p>
-                  )}
-                </div>
-                {branch.logo && (
-                  <div className="shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
-                    <Image
-                      src={branch.logo}
-                      alt={`${branch.name} logo`}
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 rounded object-cover ring-1 ring-gray-200"
-                    />
+            <div className="p-4 md:p-5 flex flex-col flex-1 min-h-0">
+              {/* Content Section - Can grow */}
+              <div className="flex flex-col flex-1 space-y-3 min-h-0">
+                {/* Header Section */}
+                <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base md:text-lg font-semibold text-card-foreground leading-tight line-clamp-2">
+                      {branch.name}
+                    </CardTitle>
+                    {branch.company?.name && (
+                      <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-1">{branch.company.name}</p>
+                    )}
                   </div>
-                )}
-              </div>
-              {(branch.address || branch.district) && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    {[branch.address, branch.district].filter(Boolean).join(' • ')}
-                  </p>
-                  {mapsLink && (
-                    <a
-                      className="text-xs text-blue-600 hover:underline"
-                      href={mapsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Lihat lokasi di Google Maps
-                    </a>
+                  {branch.logo && (
+                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <Image
+                        src={branch.logo}
+                        alt={`${branch.name} logo`}
+                        width={48}
+                        height={48}
+                        className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover ring-1 ring-border"
+                      />
+                    </div>
                   )}
                 </div>
-              )}
-            </CardHeader>
-            <CardContent className="pt-2">
-              {hasPromoOpen && (
-                <div className="mb-3 rounded-md bg-gray-100 p-3" onClick={(e) => e.stopPropagation()}>
-                  {(() => {
-                    const p = branch.promoPreview
-                    const checklist = Array.isArray(p?.checklist) ? p!.checklist! : []
-                    return (
-                      <div className="text-sm text-foreground">
-                        <p className="font-medium">{p?.title ?? 'Promo'}</p>
-                        {checklist.length > 0 && (
-                          <ul className="mt-1 list-disc pl-5">
-                            {checklist.map((item, idx) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                {waLink && (
-                  <a
-                    href={waLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white hover:bg-green-600"
-                    aria-label="Hubungi via WhatsApp"
-                    title={normalized}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    💬 WhatsApp
-                  </a>
+                
+                {branch.typeName && (
+                  <Badge variant="secondary" className="text-xs font-medium">
+                    {branch.typeName}
+                  </Badge>
                 )}
-                {branch.promoPreview && (
-                  <button
-                    type="button"
+                
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  <p className="text-xs md:text-sm">
+                    {branch.city || 'Kota tidak tersedia'}
+                  </p>
+                </div>
+              </div>
+
+              <Separator className="my-2" />
+
+              {/* Collapsible Promo Badge */}
+              {branch.promoPreview ? (
+                <div className="shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={(e) => {
-                      e.stopPropagation()
+                      e.stopPropagation();
                       setOpenPromoId((curr) => (curr === branch.id ? null : branch.id))
                     }}
-                    className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800 hover:bg-yellow-200"
-                    aria-expanded={openPromoId === branch.id}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-2",
+                      "px-3 py-2 rounded-lg",
+                      "transition-all duration-300",
+                      "focus:outline-none",
+                      "text-primary border-primary",
+                      "hover:!bg-primary hover:!text-white hover:!border-primary",
+                      isPromoExpanded && "rounded-b-none"
+                    )}
+                    style={{
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.borderColor = 'hsl(var(--primary))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'hsl(var(--primary))';
+                      e.currentTarget.style.borderColor = 'hsl(var(--primary))';
+                    }}
+                    aria-expanded={!!isPromoExpanded}
+                    aria-controls={`promo-content-${branch.id}`}
                   >
-                    🏷️ Promo
-                  </button>
-                )}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      <span className="font-semibold text-xs truncate">
+                        {promo?.title ?? '🎉 Promo'}
+                      </span>
+                    </div>
+                    {isPromoExpanded ? (
+                      <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                  </Button>
+                  
+                  <div
+                    id={`promo-content-${branch.id}`}
+                    className={cn(
+                      "overflow-hidden transition-all duration-300",
+                      isPromoExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    )}
+                  >
+                    <div className="px-3 py-2 bg-background border border-primary/20 rounded-b-lg">
+                      <div className="text-xs text-foreground space-y-1.5">
+                        {checklist.length > 0 ? (
+                          <ul className="space-y-1">
+                            {checklist.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-1.5">
+                                <span className="text-primary mt-0.5 shrink-0 text-xs">✓</span>
+                                <span className="flex-1 text-xs leading-relaxed">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs">{promo?.title ?? 'Promo tersedia'}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[42px] shrink-0" aria-hidden="true" />
+              )}
               </div>
 
-              <div className="mt-3 border-b border-gray-200" />
-            </CardContent>
+              {/* Action Buttons - Always at bottom */}
+              <div className="flex items-center gap-2 pt-3 mt-auto shrink-0">
+                {waLink && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-full gap-1.5 rounded-full",
+                      "transition-all duration-200",
+                      "focus:outline-none"
+                    )}
+                    style={{
+                      borderColor: 'rgba(22, 163, 74, 0.5)',
+                      color: '#16A34A',
+                      backgroundColor: 'transparent'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Hubungi via WhatsApp"
+                      title={normalized}
+                      style={{
+                        borderColor: 'rgba(22, 163, 74, 0.5)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#16A34A';
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#16A34A';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#16A34A';
+                        e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
+                      }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-primary/5 rounded-full blur-2xl md:blur-3xl -z-10 group-hover:bg-primary/10 transition-colors duration-300" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 md:w-24 md:h-24 bg-accent/5 rounded-full blur-xl md:blur-2xl -z-10 group-hover:bg-accent/10 transition-colors duration-300" />
           </Card>
         )
       })}

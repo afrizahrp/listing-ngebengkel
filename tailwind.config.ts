@@ -50,10 +50,14 @@ const config: Config = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
-  			yellow: {
-  				DEFAULT: '#FFD700',
-  				foreground: 'hsl(var(--yellow-foreground))'
-  			}
+			yellow: {
+				DEFAULT: '#FFD700',
+				foreground: 'hsl(var(--yellow-foreground))'
+			},
+			'badge-promo': {
+				DEFAULT: 'hsl(var(--badge-promo))',
+				foreground: 'hsl(var(--badge-promo-foreground))'
+			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
