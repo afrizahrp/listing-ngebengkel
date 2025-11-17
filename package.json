@@ -9,7 +9,8 @@
     "start": "next start -p 3100",
     "lint": "next lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "postinstall": "npm rebuild sharp || npm install sharp"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
