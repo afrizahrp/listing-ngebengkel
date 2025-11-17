@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
 // Removed SlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
+import { createSlug } from '@/lib/utils/slug'
 
 
 type PromoPreview = {
@@ -60,7 +61,9 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           : ''
         const handleOpenDetail = () => {
           onBranchClick?.(branch)
-          router.push(`/workshop/${branch.id}`)
+          // Gunakan slug dari nama untuk URL yang lebih SEO-friendly
+          const slug = createSlug(branch.name)
+          router.push(`/workshop/${slug}`)
         }
         // Cek apakah promo untuk branch ini sudah expanded
         const branchIdStr = branch.id ? String(branch.id).trim() : null

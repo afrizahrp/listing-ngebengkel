@@ -19,22 +19,25 @@ type WaitingListListQueryOptions = Omit<
 >;
 
 export const useWaitingList = (
-  id: string | null,
+  slugOrId: string | null,
   options?: WaitingListQueryOptions,
 ) => {
   const { enabled, ...restOptions } = options ?? {};
 
   return useQuery<WaitingListItem, Error>({
-    queryKey: ['waiting-list', id],
-    enabled: Boolean(id) && (enabled ?? true),
+    queryKey: ['waiting-list', slugOrId],
+    enabled: Boolean(slugOrId) && (enabled ?? true),
     queryFn: async () => {
-      if (!id) {
-        throw new Error('ID waiting list wajib diisi.');
+      if (!slugOrId) {
+        throw new Error('Slug atau ID waiting list wajib diisi.');
       }
 
       try {
+        // Coba dengan slug-based endpoint (jika ada) atau fallback ke byId
+        // Untuk sekarang, kita akan cari berdasarkan slug di frontend
+        // atau buat endpoint baru di API route
         const { data } = await sysApi.get<unknown>(
-          SYS_ENDPOINTS.waitingList.byId(id),
+          `/api/waiting-list/${encodeURIComponent(slugOrId)}`,
         );
         const payload = data as any;
         // Terima dua bentuk: { message, data } atau object langsung

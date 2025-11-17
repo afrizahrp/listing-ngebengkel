@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createSlug } from '@/lib/utils/slug';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +22,6 @@ async function getServiceToken(): Promise<string> {
     'http://localhost:4000';
 
   const identity = serviceEmail || username;
-
   if (!identity || !password) {
     throw new Error('Missing SERVICE_EMAIL/SERVICE_USERNAME or SERVICE_PASSWORD');
   }
@@ -57,17 +55,13 @@ async function getServiceToken(): Promise<string> {
     body?.access_token || body?.token || body?.accessToken;
   const expiresInSec: number | undefined =
     body?.expires_in || body?.expiresIn || body?.exp;
-
-  if (!token) {
-    throw new Error('Service login did not return access token');
-  }
+  if (!token) throw new Error('Service login did not return access token');
 
   cachedToken = token;
   cachedTokenExp =
     typeof expiresInSec === 'number'
       ? Date.now() + Math.max(0, expiresInSec - 30) * 1000
       : Date.now() + 5 * 60 * 1000;
-
   return token;
 }
 
@@ -79,7 +73,7 @@ export async function GET(
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     'http://localhost:4000';
-  const slugOrId = context.params.id;
+  const id = context.params.id;
 
   let token: string;
   try {
@@ -94,9 +88,8 @@ export async function GET(
 
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
+  const target = `${apiBase}/sys_subdistrict/${encodeURIComponent(id)}`;
 
-  // Coba cari berdasarkan ID dulu (untuk backward compatibility)
-  let target = `${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`;
   let res = await fetch(target, {
     headers: {
       'Content-Type': 'application/json',
@@ -104,39 +97,6 @@ export async function GET(
     },
     cache: 'no-store',
   });
-
-  // Jika tidak ditemukan dengan ID, coba cari berdasarkan slug (nama)
-  if (res.status === 404) {
-    try {
-      // Fetch semua waiting list dan cari berdasarkan slug
-      const allRes = await fetch(`${apiBase}/waiting-list`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
-      });
-
-      if (allRes.ok) {
-        const allData = await allRes.json().catch(() => ({}));
-        const items = Array.isArray(allData) ? allData : (allData?.data || []);
-        
-        // Cari item yang slug-nya match
-        const foundItem = items.find((item: { name?: string; id?: string }) => {
-          if (!item.name) return false;
-          const itemSlug = createSlug(item.name);
-          return itemSlug === slugOrId || item.id === slugOrId;
-        });
-
-        if (foundItem) {
-          return NextResponse.json(foundItem, { status: 200 });
-        }
-      }
-    } catch (error) {
-      // Fallback ke error original
-    }
-  }
-
   if (res.status === 401) {
     try {
       cachedToken = null;
@@ -149,9 +109,7 @@ export async function GET(
         },
         cache: 'no-store',
       });
-    } catch {
-      // fallthrough
-    }
+    } catch {}
   }
 
   const data = await res.json().catch(() => ({}));

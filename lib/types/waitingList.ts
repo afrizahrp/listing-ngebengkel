@@ -14,6 +14,7 @@ export interface WaitingListItem {
   categoryId: string | null;
   categoryCode?: string | null;
   categoryName?: string | null;
+  description?: string | null;
   workshopTypes: WorkshopType[];
   hasPromo?: boolean;
   promoPreview?: {
@@ -22,6 +23,8 @@ export interface WaitingListItem {
     promoType: string;
     checklist?: string[] | null;
   } | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
   createdAt: string;
   updatedAt: string;
   createdBy: string | null;
