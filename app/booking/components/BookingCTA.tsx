@@ -189,7 +189,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
             </div>
             <div className="flex-shrink-0 sm:pt-8">
               <Link
-                href="https://www.register.ngebengkel.com"
+                href="https://workshop.ngebengkel.com/waitinglist-registration"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-gray-50 hover:text-foreground"
