@@ -43,7 +43,7 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 items-stretch">
-      {branches.map((branch) => {
+      {branches.map((branch, index) => {
         const rawPhone = (branch.phone || '').trim()
         const digitsOnly = rawPhone.replace(/[^0-9]/g, '')
         let normalized = digitsOnly
@@ -62,13 +62,16 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           onBranchClick?.(branch)
           router.push(`/workshop/${branch.id}`)
         }
-        const isPromoExpanded = openPromoId === branch.id && branch.promoPreview
+        // Pastikan perbandingan dengan tipe yang sama dan nilai yang valid
+        const currentPromoId = openPromoId ? String(openPromoId).trim() : null
+        const currentBranchId = branch.id ? String(branch.id).trim() : null
+        const isPromoExpanded = currentPromoId !== null && currentPromoId === currentBranchId && !!branch.promoPreview
         const promo = branch.promoPreview
         const checklist = Array.isArray(promo?.checklist) ? promo!.checklist! : []
         
         return (
           <Card
-            key={branch.id}
+            key={`branch-${branch.id}-${index}`}
             className={cn(
               "group relative overflow-hidden transition-all duration-300",
               "hover:shadow-lg hover:shadow-shadow-hover",
@@ -141,17 +144,68 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                 </div>
               </div>
 
-              <Separator className="my-2" />
+              <Separator className="my-3" />
 
-              {/* Collapsible Promo Badge */}
+              {/* Action Buttons - WhatsApp di atas */}
+              <div className="flex items-center gap-2 pt-2 mt-auto shrink-0">
+                {waLink && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-full gap-1.5 rounded-full",
+                      "transition-all duration-200",
+                      "focus:outline-none"
+                    )}
+                    style={{
+                      borderColor: 'rgba(22, 163, 74, 0.5)',
+                      color: '#16A34A',
+                      backgroundColor: 'transparent'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Hubungi via WhatsApp"
+                      title={normalized}
+                      style={{
+                        borderColor: 'rgba(22, 163, 74, 0.5)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#16A34A';
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#16A34A';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#16A34A';
+                        e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
+                      }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </Button>
+                )}
+              </div>
+
+              {/* Collapsible Promo Badge - di bawah WhatsApp */}
               {branch.promoPreview ? (
-                <div className="shrink-0">
+                <div className="shrink-0 mt-2 mb-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenPromoId((curr) => (curr === branch.id ? null : branch.id))
+                      setOpenPromoId((curr) => {
+                        if (String(curr) === String(branch.id)) {
+                          return null;
+                        }
+                        return String(branch.id);
+                      });
                     }}
                     className={cn(
                       "w-full flex items-center justify-between gap-2",
@@ -219,52 +273,6 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
               ) : (
                 <div className="h-[42px] shrink-0" aria-hidden="true" />
               )}
-              </div>
-
-              {/* Action Buttons - Always at bottom */}
-              <div className="flex items-center gap-2 pt-3 mt-auto shrink-0">
-                {waLink && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "w-full gap-1.5 rounded-full",
-                      "transition-all duration-200",
-                      "focus:outline-none"
-                    )}
-                    style={{
-                      borderColor: 'rgba(22, 163, 74, 0.5)',
-                      color: '#16A34A',
-                      backgroundColor: 'transparent'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a
-                      href={waLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Hubungi via WhatsApp"
-                      title={normalized}
-                      style={{
-                        borderColor: 'rgba(22, 163, 74, 0.5)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#16A34A';
-                        e.currentTarget.style.color = '#FFFFFF';
-                        e.currentTarget.style.borderColor = '#16A34A';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#16A34A';
-                        e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
-                      }}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span>WhatsApp</span>
-                    </a>
-                  </Button>
-                )}
               </div>
             </div>
 
