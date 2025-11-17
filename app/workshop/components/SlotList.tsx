@@ -1,11 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import type { BookingSlot } from '../../../types/booking';
 
-type BookingSlotListProps = {
+type SlotListProps = {
   slots: BookingSlot[];
 };
 
-export function BookingSlotList({ slots }: BookingSlotListProps) {
+export function SlotList({ slots }: SlotListProps) {
   const availableSlots = slots.filter((slot) => slot.isAvailable);
 
   if (availableSlots.length === 0) {
@@ -30,5 +30,4 @@ export function BookingSlotList({ slots }: BookingSlotListProps) {
     </div>
   );
 }
-
 

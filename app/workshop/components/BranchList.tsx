@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
-// Removed BookingSlotList import because slots are not shown now
+// Removed SlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
 
 
@@ -24,12 +24,12 @@ type BranchItem = BookingBranch & {
   promoPreview?: PromoPreview;
 };
 
-type BookingBranchListProps = {
+type BranchListProps = {
   branches: BranchItem[];
   onBranchClick?: (branch: BranchItem) => void;
 };
 
-export function BookingBranchList({ branches, onBranchClick }: BookingBranchListProps) {
+export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const router = useRouter()
   const [openPromoId, setOpenPromoId] = useState<string | null>(null)
   if (branches.length === 0) {
@@ -84,11 +84,27 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
             }}
             aria-label={`Buka detail ${branch.name}`}
           >
+            {/* Promo Badge - Pojok Kiri Atas */}
+            {branch.promoPreview && (
+              <div className="absolute top-0 left-0 z-10">
+                <Badge 
+                  className={cn(
+                    "bg-yellow-50 text-yellow-800 border-yellow-200",
+                    "px-2.5 py-1 text-xs font-semibold",
+                    "rounded-br-lg rounded-tl-none rounded-tr-none rounded-bl-none",
+                    "shadow-sm"
+                  )}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Promo
+                </Badge>
+              </div>
+            )}
             <div className="p-4 md:p-5 flex flex-col flex-1 min-h-0">
               {/* Content Section - Can grow */}
               <div className="flex flex-col flex-1 space-y-3 min-h-0">
                 {/* Header Section */}
-                <div className="space-y-2">
+                <div className={cn("space-y-2", branch.promoPreview && "mt-6")}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base md:text-lg font-semibold text-card-foreground leading-tight line-clamp-1 truncate">

@@ -3,13 +3,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 
-import { BookingBranchList } from './BookingBranchList';
-import { BookingSearchBar } from './BookingSearchBar';
+import { BranchList } from './BranchList';
+import { SearchBar } from './SearchBar';
 import type { BookingBranch } from '@/types/booking';
 import { useWaitingLists as useWL } from '@/queryHooks/useWaitingList';
 import { useDebounce } from '@/hooks/useDebounce';
 
-type BookingCTAVariant = 'section' | 'dialog';
+type CTAVariant = 'section' | 'dialog';
 
 interface WaitingListListItem {
   id: string;
@@ -38,7 +38,7 @@ interface ExtendedBranch extends BookingBranch {
   promoPreview?: WaitingListListItem['promoPreview'];
 }
 
-export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVariant }) {
+export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const { data: waitingLists, isLoading, isError } = useWL();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -201,7 +201,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
         </header>
 
         <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-          <BookingSearchBar value={searchTerm} onChange={setSearchTerm} />
+          <SearchBar value={searchTerm} onChange={setSearchTerm} />
         </div>
 
         <div className="space-y-4">
@@ -210,7 +210,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
           ) : isError ? (
             <p className="text-sm text-destructive">Gagal memuat daftar bengkel.</p>
           ) : (
-            <BookingBranchList branches={filteredBranches} />
+            <BranchList branches={filteredBranches} />
           )}
         </div>
 
@@ -219,5 +219,4 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
     </section>
   );
 }
-
 

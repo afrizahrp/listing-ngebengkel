@@ -1,22 +1,22 @@
 import { Button } from '@/components/ui/button';
 
-type BookingCityFilterProps = {
-  cities: string[];
-  selectedCity: string;
-  onSelectCity: (city: string) => void;
+type TypeFilterProps = {
+  types: string[];
+  selectedType: string;
+  onSelectType: (type: string) => void;
 };
 
-export function BookingCityFilter({ cities, selectedCity, onSelectCity }: BookingCityFilterProps) {
+export function TypeFilter({ types, selectedType, onSelectType }: TypeFilterProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      {['Semua Kota', ...cities].map((city) => {
-        const isSelected = selectedCity === city;
+      {['Semua Tipe', ...types].map((type) => {
+        const isSelected = selectedType === type;
         return (
           <Button
-            key={city}
+            key={type}
             variant={isSelected ? 'default' : 'outline'}
             size="sm"
-            onClick={() => onSelectCity(city)}
+            onClick={() => onSelectType(type)}
             aria-pressed={isSelected}
             className={
               isSelected
@@ -24,12 +24,11 @@ export function BookingCityFilter({ cities, selectedCity, onSelectCity }: Bookin
                 : 'rounded-full border border-[#045693]/40 text-[#045693] bg-white px-5 py-2 hover:border-[#045693] hover:bg-primary/5'
             }
           >
-            {city}
+            {type}
           </Button>
         );
       })}
     </div>
   );
 }
-
 

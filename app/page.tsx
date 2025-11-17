@@ -1,9 +1,9 @@
-import { BookingCTA } from "./booking/components/BookingCTA";
+import { CTA } from "./workshop/components/CTA";
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <BookingCTA variant="section" />
+      <CTA variant="section" />
     </main>
   );
 }
