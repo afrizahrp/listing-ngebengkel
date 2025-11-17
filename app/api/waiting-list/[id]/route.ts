@@ -96,7 +96,7 @@ export async function GET(
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 
   // Coba cari berdasarkan ID dulu (untuk backward compatibility)
-  let target = `${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`;
+  const target = `${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`;
   let res = await fetch(target, {
     headers: {
       'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ export async function GET(
           return NextResponse.json(foundItem, { status: 200 });
         }
       }
-    } catch (error) {
+    } catch {
       // Fallback ke error original
     }
   }
