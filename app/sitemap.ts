@@ -28,8 +28,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 3600 },
     });
     if (res.ok) {
-      const data = (await res.json()) as any;
-      const items: WaitingListItem[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      const data = (await res.json()) as {
+        data?: WaitingListItem[];
+      } | WaitingListItem[];
+      const items: WaitingListItem[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
       for (const item of items) {
         routes.push({
           url: `${baseUrl}/workshop/${encodeURIComponent(item.id)}`,

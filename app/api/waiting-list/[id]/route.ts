@@ -44,7 +44,14 @@ async function getServiceToken(): Promise<string> {
     throw new Error(`Service login failed: ${res.status} ${err}`);
   }
 
-  const body = await res.json().catch(() => ({} as any));
+  const body = (await res.json().catch(() => ({}))) as {
+    access_token?: string;
+    token?: string;
+    accessToken?: string;
+    expires_in?: number;
+    expiresIn?: number;
+    exp?: number;
+  };
   const token: string | undefined =
     body?.access_token || body?.token || body?.accessToken;
   const expiresInSec: number | undefined =
@@ -76,9 +83,10 @@ export async function GET(
   let token: string;
   try {
     token = await getServiceToken();
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to resolve service token';
     return NextResponse.json(
-      { message: e?.message ?? 'Failed to resolve service token' },
+      { message },
       { status: 500 },
     );
   }
