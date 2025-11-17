@@ -146,133 +146,134 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
 
               <Separator className="my-3" />
 
-              {/* Action Buttons - WhatsApp di atas */}
-              <div className="flex items-center gap-2 pt-2 mt-auto shrink-0">
+              {/* Action Area Container - Container Terpisah untuk WhatsApp & Promo */}
+              <div className="mt-auto shrink-0 pt-4 space-y-3 border-t border-gray-100">
+                {/* WhatsApp Button */}
                 {waLink && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "w-full gap-1.5 rounded-full",
-                      "transition-all duration-200",
-                      "focus:outline-none"
-                    )}
-                    style={{
-                      borderColor: 'rgba(22, 163, 74, 0.5)',
-                      color: '#16A34A',
-                      backgroundColor: 'transparent'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a
-                      href={waLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Hubungi via WhatsApp"
-                      title={normalized}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full gap-1.5 rounded-full",
+                        "transition-all duration-200",
+                        "focus:outline-none"
+                      )}
                       style={{
-                        borderColor: 'rgba(22, 163, 74, 0.5)'
+                        borderColor: 'rgba(22, 163, 74, 0.5)',
+                        color: '#16A34A',
+                        backgroundColor: 'transparent'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Hubungi via WhatsApp"
+                        title={normalized}
+                        style={{
+                          borderColor: 'rgba(22, 163, 74, 0.5)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#16A34A';
+                          e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = '#16A34A';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = '#16A34A';
+                          e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
+                        }}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span>WhatsApp</span>
+                      </a>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Collapsible Promo Section */}
+                {branch.promoPreview ? (
+                  <div className="shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenPromoId((curr) => {
+                          if (String(curr) === String(branch.id)) {
+                            return null;
+                          }
+                          return String(branch.id);
+                        });
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2",
+                        "px-3 py-2 rounded-lg",
+                        "transition-all duration-300",
+                        "focus:outline-none",
+                        "text-primary border-primary",
+                        "hover:!bg-primary hover:!text-white hover:!border-primary",
+                        isPromoExpanded && "rounded-b-none"
+                      )}
+                      style={{
+                        backgroundColor: 'transparent'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#16A34A';
-                        e.currentTarget.style.color = '#FFFFFF';
-                        e.currentTarget.style.borderColor = '#16A34A';
+                        e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.borderColor = 'hsl(var(--primary))';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#16A34A';
-                        e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
+                        e.currentTarget.style.color = 'hsl(var(--primary))';
+                        e.currentTarget.style.borderColor = 'hsl(var(--primary))';
                       }}
+                      aria-expanded={!!isPromoExpanded}
+                      aria-controls={`promo-content-${branch.id}`}
                     >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span>WhatsApp</span>
-                    </a>
-                  </Button>
-                )}
-              </div>
-
-              {/* Collapsible Promo Badge - di bawah WhatsApp */}
-              {branch.promoPreview ? (
-                <div className="shrink-0 mt-2 mb-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenPromoId((curr) => {
-                        if (String(curr) === String(branch.id)) {
-                          return null;
-                        }
-                        return String(branch.id);
-                      });
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between gap-2",
-                      "px-3 py-2 rounded-lg",
-                      "transition-all duration-300",
-                      "focus:outline-none",
-                      "text-primary border-primary",
-                      "hover:!bg-primary hover:!text-white hover:!border-primary",
-                      isPromoExpanded && "rounded-b-none"
-                    )}
-                    style={{
-                      backgroundColor: 'transparent'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
-                      e.currentTarget.style.color = 'white';
-                      e.currentTarget.style.borderColor = 'hsl(var(--primary))';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'hsl(var(--primary))';
-                      e.currentTarget.style.borderColor = 'hsl(var(--primary))';
-                    }}
-                    aria-expanded={!!isPromoExpanded}
-                    aria-controls={`promo-content-${branch.id}`}
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                      <span className="font-semibold text-xs truncate">
-                        {promo?.title ?? '🎉 Promo'}
-                      </span>
-                    </div>
-                    {isPromoExpanded ? (
-                      <ChevronUp className="h-3.5 w-3.5 shrink-0" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-                    )}
-                  </Button>
-                  
-                  <div
-                    id={`promo-content-${branch.id}`}
-                    className={cn(
-                      "overflow-hidden transition-all duration-300",
-                      isPromoExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                    )}
-                  >
-                    <div className="px-3 py-2 bg-background border border-primary/20 rounded-b-lg">
-                      <div className="text-xs text-foreground space-y-1.5">
-                        {checklist.length > 0 ? (
-                          <ul className="space-y-1">
-                            {checklist.map((item, idx) => (
-                              <li key={idx} className="flex items-start gap-1.5">
-                                <span className="text-primary mt-0.5 shrink-0 text-xs">✓</span>
-                                <span className="flex-1 text-xs leading-relaxed">{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs">{promo?.title ?? 'Promo tersedia'}</p>
-                        )}
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                        <span className="font-semibold text-xs truncate">
+                          {promo?.title ?? '🎉 Promo'}
+                        </span>
+                      </div>
+                      {isPromoExpanded ? (
+                        <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </Button>
+                    
+                    <div
+                      id={`promo-content-${branch.id}`}
+                      className={cn(
+                        "overflow-hidden transition-all duration-300",
+                        isPromoExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                      )}
+                    >
+                      <div className="px-3 py-2 bg-background border border-primary/20 rounded-b-lg mt-1">
+                        <div className="text-xs text-foreground space-y-1.5">
+                          {checklist.length > 0 ? (
+                            <ul className="space-y-1">
+                              {checklist.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-1.5">
+                                  <span className="text-primary mt-0.5 shrink-0 text-xs">✓</span>
+                                  <span className="flex-1 text-xs leading-relaxed">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs">{promo?.title ?? 'Promo tersedia'}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="h-[42px] shrink-0" aria-hidden="true" />
-              )}
+                ) : null}
+              </div>
               </div>
             </div>
 
