@@ -31,7 +31,7 @@ type BranchListProps = {
 
 export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const router = useRouter()
-  const [openPromoId, setOpenPromoId] = useState<string | null>(null)
+  const [openPromoIds, setOpenPromoIds] = useState<Set<string>>(new Set())
   if (branches.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -62,10 +62,9 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           onBranchClick?.(branch)
           router.push(`/workshop/${branch.id}`)
         }
-        // Pastikan perbandingan dengan tipe yang sama dan nilai yang valid
-        const currentPromoId = openPromoId ? String(openPromoId).trim() : null
-        const currentBranchId = branch.id ? String(branch.id).trim() : null
-        const isPromoExpanded = currentPromoId !== null && currentPromoId === currentBranchId && !!branch.promoPreview
+        // Cek apakah promo untuk branch ini sudah expanded
+        const branchIdStr = branch.id ? String(branch.id).trim() : null
+        const isPromoExpanded = branchIdStr !== null && openPromoIds.has(branchIdStr) && !!branch.promoPreview
         const promo = branch.promoPreview
         const checklist = Array.isArray(promo?.checklist) ? promo!.checklist! : []
         
@@ -202,11 +201,17 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenPromoId((curr) => {
-                          if (String(curr) === String(branch.id)) {
-                            return null;
+                        const branchIdStr = String(branch.id).trim();
+                        setOpenPromoIds((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(branchIdStr)) {
+                            // Jika sudah expanded, tutup (remove dari set)
+                            newSet.delete(branchIdStr);
+                          } else {
+                            // Jika belum expanded, buka (tambah ke set)
+                            newSet.add(branchIdStr);
                           }
-                          return String(branch.id);
+                          return newSet;
                         });
                       }}
                       className={cn(
