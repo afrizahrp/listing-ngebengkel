@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
 
 import { BookingBranchList } from './BookingBranchList';
 import { BookingSearchBar } from './BookingSearchBar';
 import type { BookingBranch } from '@/types/booking';
 import { useWaitingLists as useWL } from '@/queryHooks/useWaitingList';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type BookingCTAVariant = 'section' | 'dialog';
 
@@ -39,6 +41,7 @@ interface ExtendedBranch extends BookingBranch {
 export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVariant }) {
   const { data: waitingLists, isLoading, isError } = useWL();
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [cityNameMap, setCityNameMap] = useState<Record<string, string>>({});
 
   // Fetch city names for all unique city IDs using batch endpoint
@@ -92,12 +95,16 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
         }
         
         setCityNameMap(cityMap);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Handle network errors, timeouts, etc.
-        if (error.name === 'AbortError') {
-          console.warn('Timeout fetching cities batch');
-        } else if (error.message?.includes('fetch failed')) {
-          console.warn('Network error fetching cities batch:', error.message);
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            console.warn('Timeout fetching cities batch');
+          } else if (error.message?.includes('fetch failed')) {
+            console.warn('Network error fetching cities batch:', error.message);
+          } else {
+            console.warn('Failed to fetch cities batch:', error);
+          }
         } else {
           console.warn('Failed to fetch cities batch:', error);
         }
@@ -140,7 +147,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
   }, [waitingLists, cityNameMap]);
 
   const filteredBranches: ExtendedBranch[] = useMemo(() => {
-    const normalized = searchTerm.trim().toLowerCase();
+    const normalized = debouncedSearchTerm.trim().toLowerCase();
     const hasPromoKeyword = /\bpromo\b/.test(normalized);
     const rest = normalized.replace(/\bpromo\b/g, '').trim();
 
@@ -162,7 +169,7 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
       }
       return textHit;
     });
-  }, [branches, searchTerm]);
+  }, [branches, debouncedSearchTerm]);
 
   return (
     <section className={variant === 'section' ? 'w-full bg-white py-12 text-[#2f2f2f]' : 'w-full rounded-3xl bg-background text-[#2f2f2f]'}>
@@ -173,10 +180,24 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
             : 'mx-auto flex w-full max-w-5xl flex-col gap-6 rounded-3xl border border-gray-200 bg-background/95 px-6 py-8 shadow-xl sm:px-10 sm:py-10'
         }
       >
-        <header className="space-y-2 text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Promo &amp; Bengkel</p>
-          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Temukan Bengkel Promo di Sekitar Anda</h1>
-          <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, jenis layanan, atau kata kunci seperti “promo”.</p>
+        <header className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1 space-y-2 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Promo &amp; Bengkel</p>
+              <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Temukan Bengkel Promo di Sekitar Anda</h1>
+              <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, jenis layanan, atau kata kunci seperti &quot;promo&quot;.</p>
+            </div>
+            <div className="flex-shrink-0 sm:pt-8">
+              <Link
+                href="https://www.register.ngebengkel.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-gray-50 hover:text-foreground"
+              >
+                Daftarin Bengkel, Gratis!
+              </Link>
+            </div>
+          </div>
         </header>
 
         <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -184,7 +205,6 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
         </div>
 
         <div className="space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Daftar Bengkel</p>
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Memuat daftar bengkel...</p>
           ) : isError ? (
@@ -193,6 +213,8 @@ export function BookingCTA({ variant = 'section' }: { variant?: BookingCTAVarian
             <BookingBranchList branches={filteredBranches} />
           )}
         </div>
+
+      
       </div>
     </section>
   );

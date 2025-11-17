@@ -5,13 +5,21 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Optimasi file watching
-  webpack: (config, { dev }) => {
+  // Optimasi file watching dan Fast Refresh
+  webpack: (config, { dev, isServer }) => {
     if (dev) {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
+        ignored: /node_modules/,
       };
+      // Memastikan Fast Refresh bekerja dengan baik
+      if (!isServer) {
+        config.optimization = {
+          ...config.optimization,
+          moduleIds: 'named',
+        };
+      }
     }
     return config;
   },

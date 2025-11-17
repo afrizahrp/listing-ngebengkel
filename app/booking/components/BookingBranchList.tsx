@@ -91,7 +91,7 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                 <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base md:text-lg font-semibold text-card-foreground leading-tight line-clamp-2">
+                    <CardTitle className="text-base md:text-lg font-semibold text-card-foreground leading-tight line-clamp-1 truncate">
                       {branch.name}
                     </CardTitle>
                     {branch.company?.name && (
@@ -103,9 +103,9 @@ export function BookingBranchList({ branches, onBranchClick }: BookingBranchList
                       <Image
                         src={branch.logo}
                         alt={`${branch.name} logo`}
-                        width={48}
-                        height={48}
-                        className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover ring-1 ring-border"
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-lg object-cover ring-1 ring-border"
                       />
                     </div>
                   )}
