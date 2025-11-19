@@ -25,39 +25,57 @@ export async function getServiceTokenWithRefresh(): Promise<string> {
   // 1. Check static token dari env (highest priority)
   const staticToken = process.env.LISTING_SERVICE_TOKEN?.trim();
   if (staticToken) {
-    console.log('[ServiceToken] Using static token from env');
+    console.log('[ServiceToken] ⚠️ Using static token from env (auto-refresh DISABLED)');
     return staticToken;
   }
 
   // 2. Check cached token (masih valid)
   if (tokenCache && Date.now() < tokenCache.expiresAt - 60000) {
     const timeLeft = Math.floor((tokenCache.expiresAt - Date.now()) / 1000 / 60);
-    console.log(`[ServiceToken] ✅ Using cached token (expires in ${timeLeft} minutes)`);
+    const timeLeftSec = Math.floor((tokenCache.expiresAt - Date.now()) / 1000);
+    console.log(`[ServiceToken] ✅ Using cached token (expires in ${timeLeft} minutes / ${timeLeftSec} seconds)`);
     // Return cached token jika masih valid (dengan buffer 1 menit)
     return tokenCache.accessToken;
   }
 
   // 2.5. Token expired, log info
   if (tokenCache && Date.now() >= tokenCache.expiresAt - 60000) {
-    const expiredMinutes = Math.floor((Date.now() - tokenCache.expiresAt) / 1000 / 60);
-    if (expiredMinutes > 0) {
-      console.log(`[ServiceToken] ⏰ Cached token expired ${expiredMinutes} minutes ago, will refresh...`);
+    const expiredSeconds = Math.floor((Date.now() - tokenCache.expiresAt) / 1000);
+    const expiredMinutes = Math.floor(expiredSeconds / 60);
+    if (expiredSeconds > 0) {
+      console.log(`[ServiceToken] ⏰ Cached token expired ${expiredSeconds} seconds (${expiredMinutes} minutes) ago, will refresh...`);
     } else {
       console.log(`[ServiceToken] ⏰ Cached token about to expire, will refresh...`);
+    }
+    
+    // Log refresh token status
+    const refreshTimeLeft = Math.floor((tokenCache.refreshExpiresAt - Date.now()) / 1000);
+    const refreshTimeLeftMin = Math.floor(refreshTimeLeft / 60);
+    if (refreshTimeLeft > 0) {
+      console.log(`[ServiceToken] 📋 Refresh token still valid (expires in ${refreshTimeLeftMin} minutes / ${refreshTimeLeft} seconds)`);
+    } else {
+      console.log(`[ServiceToken] ⚠️ Refresh token also expired (${Math.abs(refreshTimeLeft)} seconds ago), will re-login`);
     }
   }
 
   // 3. Try refresh jika ada refresh token yang masih valid
   if (tokenCache && Date.now() < tokenCache.refreshExpiresAt) {
     const timeLeft = Math.floor((tokenCache.refreshExpiresAt - Date.now()) / 1000 / 60);
-    console.log(`[ServiceToken] Access token expired, refreshing... (refresh token expires in ${timeLeft} minutes)`);
+    const timeLeftSec = Math.floor((tokenCache.refreshExpiresAt - Date.now()) / 1000);
+    console.log(`[ServiceToken] 🔄 Access token expired, refreshing... (refresh token expires in ${timeLeft} minutes / ${timeLeftSec} seconds)`);
     try {
       const refreshed = await refreshServiceToken(tokenCache.refreshToken);
       if (refreshed) {
         const newTimeLeft = Math.floor((refreshed.expiresAt - Date.now()) / 1000 / 60);
-        console.log(`[ServiceToken] ✅ Token refreshed successfully (new token expires in ${newTimeLeft} minutes)`);
+        const newTimeLeftSec = Math.floor((refreshed.expiresAt - Date.now()) / 1000);
+        const newRefreshTimeLeft = Math.floor((refreshed.refreshExpiresAt - Date.now()) / 1000 / 60);
+        console.log(`[ServiceToken] ✅ Token refreshed successfully!`);
+        console.log(`[ServiceToken]    - New access token expires in ${newTimeLeft} minutes (${newTimeLeftSec} seconds)`);
+        console.log(`[ServiceToken]    - New refresh token expires in ${newRefreshTimeLeft} minutes`);
         tokenCache = refreshed;
         return refreshed.accessToken;
+      } else {
+        console.warn('[ServiceToken] ⚠️ Refresh returned null, will re-login');
       }
     } catch (error) {
       console.warn('[ServiceToken] ⚠️ Failed to refresh service token, will re-login:', error);
@@ -67,7 +85,7 @@ export async function getServiceTokenWithRefresh(): Promise<string> {
   }
 
   // 4. Login untuk dapat token baru
-  console.log('[ServiceToken] Logging in service account...');
+  console.log('[ServiceToken] 🔐 Logging in service account...');
   const tokens = await loginServiceAccount();
   if (!tokens) {
     throw new Error('Failed to login service account');
@@ -76,8 +94,12 @@ export async function getServiceTokenWithRefresh(): Promise<string> {
   // Update cache
   tokenCache = tokens;
   const expiresIn = Math.floor((tokens.expiresAt - Date.now()) / 1000 / 60);
+  const expiresInSec = Math.floor((tokens.expiresAt - Date.now()) / 1000);
   const refreshExpiresIn = Math.floor((tokens.refreshExpiresAt - Date.now()) / 1000 / 60);
-  console.log(`[ServiceToken] ✅ Login successful! Access token expires in ${expiresIn} minutes, refresh token expires in ${refreshExpiresIn} minutes`);
+  const refreshExpiresInSec = Math.floor((tokens.refreshExpiresAt - Date.now()) / 1000);
+  console.log(`[ServiceToken] ✅ Login successful!`);
+  console.log(`[ServiceToken]    - Access token expires in ${expiresIn} minutes (${expiresInSec} seconds)`);
+  console.log(`[ServiceToken]    - Refresh token expires in ${refreshExpiresIn} minutes (${refreshExpiresInSec} seconds)`);
 
   return tokens.accessToken;
 }
@@ -187,6 +209,7 @@ async function refreshServiceToken(
   refreshToken: string,
 ): Promise<TokenCache | null> {
   if (!refreshToken) {
+    console.log('[ServiceToken] ⚠️ No refresh token provided for refresh');
     return null;
   }
 
@@ -196,20 +219,26 @@ async function refreshServiceToken(
     'http://localhost:4000';
 
   const refreshUrl = `${base.replace(/\/+$/, '')}/api/auth/refresh`;
+  console.log(`[ServiceToken] 🔄 Calling refresh endpoint: ${refreshUrl}`);
+  
   const res = await fetch(refreshUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Refresh-Token': refreshToken, // Send refresh token in header
+      'X-Refresh-Token': refreshToken, // Send refresh token in header (case-insensitive)
+      'x-refresh-token': refreshToken, // Also send lowercase for compatibility
     },
     cache: 'no-store',
   });
 
   if (!res.ok) {
-    console.warn(`[ServiceToken] ⚠️ Refresh failed with status ${res.status}, will re-login`);
+    const errorText = await res.text().catch(() => '');
+    console.warn(`[ServiceToken] ⚠️ Refresh failed with status ${res.status}: ${errorText}`);
     // If refresh fails, return null to trigger re-login
     return null;
   }
+  
+  console.log(`[ServiceToken] ✅ Refresh endpoint responded with status ${res.status}`);
 
   const body = (await res.json().catch(() => ({}))) as {
     accessToken?: string;
