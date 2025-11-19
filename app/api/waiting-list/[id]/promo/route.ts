@@ -1,57 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getServiceTokenWithRefresh, clearServiceTokenCache } from '@/lib/utils/service-token-manager';
 
 export const runtime = 'nodejs';
-
-let cachedToken: string | null = null;
-let cachedTokenExp: number | null = null;
-
-async function getServiceToken(): Promise<string> {
-  const staticToken = process.env.LISTING_SERVICE_TOKEN?.trim();
-  if (staticToken) return staticToken;
-  if (cachedToken && cachedTokenExp && Date.now() < cachedTokenExp) return cachedToken;
-
-  const username = process.env.SERVICE_USERNAME?.trim();
-  const serviceEmail = process.env.SERVICE_EMAIL?.trim();
-  const password = process.env.SERVICE_PASSWORD?.trim();
-  const base =
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:4000';
-
-  const identity = serviceEmail || username;
-  if (!identity || !password) throw new Error('Missing SERVICE_EMAIL/SERVICE_USERNAME or SERVICE_PASSWORD');
-
-  const loginUrl = `${base.replace(/\/+$/, '')}/api/auth/login`;
-  const res = await fetch(loginUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(
-      identity.includes('@') ? { email: identity, password } : { username: identity, password },
-    ),
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Service login failed: ${res.status} ${err}`);
-  }
-  const body = (await res.json().catch(() => ({}))) as {
-    access_token?: string;
-    token?: string;
-    accessToken?: string;
-    expires_in?: number;
-    expiresIn?: number;
-    exp?: number;
-  };
-  const token: string | undefined = body?.access_token || body?.token || body?.accessToken;
-  const expiresInSec: number | undefined = body?.expires_in || body?.expiresIn || body?.exp;
-  if (!token) throw new Error('Service login did not return access token');
-  cachedToken = token;
-  cachedTokenExp =
-    typeof expiresInSec === 'number'
-      ? Date.now() + Math.max(0, expiresInSec - 30) * 1000
-      : Date.now() + 5 * 60 * 1000;
-  return token;
-}
 
 export async function GET(
   _request: Request,
@@ -65,7 +15,8 @@ export async function GET(
 
   let token: string;
   try {
-    token = await getServiceToken();
+    // Get token dengan auto-refresh mechanism
+    token = await getServiceTokenWithRefresh();
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Failed to resolve service token';
     return NextResponse.json(
@@ -85,11 +36,12 @@ export async function GET(
     },
     cache: 'no-store',
   });
+
+  // If unauthorized, clear cache dan retry sekali
   if (res.status === 401) {
     try {
-      cachedToken = null;
-      cachedTokenExp = null;
-      token = await getServiceToken();
+      clearServiceTokenCache();
+      token = await getServiceTokenWithRefresh();
       res = await fetch(target, {
         headers: {
           'Content-Type': 'application/json',
@@ -97,8 +49,12 @@ export async function GET(
         },
         cache: 'no-store',
       });
-    } catch {}
+    } catch (error) {
+      // If retry also fails, return error
+      console.error('Failed to refresh service token:', error);
+    }
   }
+
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
 }

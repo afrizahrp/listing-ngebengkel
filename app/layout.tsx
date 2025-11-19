@@ -9,6 +9,7 @@ import keywordsData from '@/data/keywords.json';
 import { GoogleAnalytics } from '@/app/components/GoogleAnalytics';
 import { GoogleSearchConsoleVerification } from '@/app/components/GoogleSearchConsoleVerification';
 import PageViewTrackerWrapper from '@/components/analytics/PageViewTrackerWrapper';
+import { AnonymousSessionInitializer } from '@/components/anonymous-session/AnonymousSessionInitializer';
 
 
 const geistSans = localFont({
@@ -106,6 +107,7 @@ export default function RootLayout({
         <GoogleSearchConsoleVerification />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         <PageViewTrackerWrapper />
+        <AnonymousSessionInitializer />
         <QueryProvider>
           {children}
         </QueryProvider>

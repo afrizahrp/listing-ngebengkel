@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAnonymousId } from '@/lib/utils/anonymous-id';
 
 // Gunakan proxy Next.js (relative URL) agar token tetap di server.
 // Jika butuh akses langsung ke backend (tanpa proxy), isi NEXT_PUBLIC_API_URL.
@@ -13,6 +14,23 @@ export const sysApi = axios.create({
   },
   timeout: 15000,
 });
+
+// Interceptor untuk menambahkan anonymous_id ke header setiap request
+sysApi.interceptors.request.use(
+  (config) => {
+    // Hanya tambahkan anonymous_id jika di client-side
+    if (typeof window !== 'undefined') {
+      const anonymousId = getAnonymousId();
+      if (anonymousId) {
+        config.headers['X-Anonymous-Id'] = anonymousId;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 export const Api = sysApi;
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import { BranchList } from './BranchList';
 import { SearchBar } from './SearchBar';
+import { LoadingDots } from './LoadingDots';
 import type { BookingBranch } from '@/types/booking';
 import { useWaitingLists as useWL } from '@/queryHooks/useWaitingList';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -206,7 +207,7 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
 
         <div className="space-y-4">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Memuat daftar bengkel...</p>
+            <LoadingDots text="Memuat daftar bengkel" />
           ) : isError ? (
             <p className="text-sm text-destructive">Gagal memuat daftar bengkel.</p>
           ) : (

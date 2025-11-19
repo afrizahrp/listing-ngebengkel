@@ -1,80 +1,9 @@
 import { NextResponse } from 'next/server';
+import { getApiHeaders } from '@/lib/utils/get-api-headers';
 
 export const runtime = 'nodejs';
 
-let cachedToken: string | null = null;
-let cachedTokenExp: number | null = null;
-
-async function getServiceToken(): Promise<string> {
-  // 1) Static token via env (preferred if provided)
-  const staticToken = process.env.LISTING_SERVICE_TOKEN?.trim();
-  if (staticToken) return staticToken;
-
-  // 2) Cached token from prior login
-  if (cachedToken && cachedTokenExp && Date.now() < cachedTokenExp) {
-    return cachedToken;
-  }
-
-  // 3) Auto-login using service credentials
-  const username = process.env.SERVICE_USERNAME?.trim();
-  const serviceEmail = process.env.SERVICE_EMAIL?.trim();
-  const password = process.env.SERVICE_PASSWORD?.trim();
-  const base =
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:4000';
-
-  const identity = serviceEmail || username;
-
-  if (!identity || !password) {
-    throw new Error('Missing SERVICE_EMAIL/SERVICE_USERNAME or SERVICE_PASSWORD');
-  }
-
-  const loginUrl = `${base.replace(/\/+$/, '')}/api/auth/login`;
-  const res = await fetch(loginUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(
-      identity.includes('@')
-        ? { email: identity, password }
-        : { username: identity, password },
-    ),
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Service login failed: ${res.status} ${err}`);
-  }
-
-  const body = (await res.json().catch(() => ({}))) as {
-    access_token?: string;
-    token?: string;
-    accessToken?: string;
-    expires_in?: number;
-    expiresIn?: number;
-    exp?: number;
-  };
-  const token: string | undefined =
-    body?.access_token || body?.token || body?.accessToken;
-  const expiresInSec: number | undefined =
-    body?.expires_in || body?.expiresIn || body?.exp; // best-effort
-
-  if (!token) {
-    throw new Error('Service login did not return access token');
-  }
-
-  cachedToken = token;
-  // If we have expiry, set a grace period; else 5 minutes default
-  cachedTokenExp =
-    typeof expiresInSec === 'number'
-      ? Date.now() + Math.max(0, expiresInSec - 30) * 1000
-      : Date.now() + 5 * 60 * 1000;
-
-  return token;
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   const base =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
@@ -84,42 +13,25 @@ export async function GET() {
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
   const target = `${apiBase}/waiting-list`;
 
-  // Try with token (static or auto-login)
-  let token: string;
-  try {
-    token = await getServiceToken();
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : 'Failed to resolve service token';
-    return NextResponse.json(
-      { message },
-      { status: 500 },
-    );
-  }
+  // Get headers dengan priority: anonymous_id > service token
+  const headers = await getApiHeaders(request);
 
   let res = await fetch(target, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     cache: 'no-store',
   });
 
-  // If unauthorized, try refresh once
-  if (res.status === 401) {
-    try {
-      cachedToken = null;
-      cachedTokenExp = null;
-      token = await getServiceToken();
-      res = await fetch(target, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
-      });
-    } catch {
-      // fallthrough; respond with original 401
+  // If unauthorized dan pakai service token, coba refresh sekali
+  if (res.status === 401 && headers['Authorization']) {
+    // Clear cache dan coba lagi dengan service token baru
+    if (typeof global !== 'undefined') {
+      (global as any).cachedServiceToken = null;
     }
+    const newHeaders = await getApiHeaders(request);
+    res = await fetch(target, {
+      headers: newHeaders,
+      cache: 'no-store',
+    });
   }
 
   const data = await res.json().catch(() => ({}));
