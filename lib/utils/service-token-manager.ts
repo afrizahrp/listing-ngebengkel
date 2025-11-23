@@ -121,7 +121,10 @@ async function loginServiceAccount(): Promise<TokenCache | null> {
     throw new Error('Missing SERVICE_EMAIL/SERVICE_USERNAME or SERVICE_PASSWORD');
   }
 
-  const loginUrl = `${base.replace(/\/+$/, '')}/api/auth/login`;
+  // Remove trailing slashes and handle /api prefix
+  const baseTrim = base.replace(/\/+$/, '');
+  const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
+  const loginUrl = `${apiBase}/auth/login`;
   const res = await fetch(loginUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -218,7 +221,10 @@ async function refreshServiceToken(
     process.env.NEXT_PUBLIC_API_URL ||
     'http://127.0.0.1:4000';
 
-  const refreshUrl = `${base.replace(/\/+$/, '')}/api/auth/refresh`;
+  // Remove trailing slashes and handle /api prefix
+  const baseTrim = base.replace(/\/+$/, '');
+  const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
+  const refreshUrl = `${apiBase}/auth/refresh`;
   console.log(`[ServiceToken] 🔄 Calling refresh endpoint: ${refreshUrl}`);
   
   const res = await fetch(refreshUrl, {
