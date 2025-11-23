@@ -7,10 +7,9 @@ export async function GET(
   request: Request,
   context: { params: { id: string } },
 ) {
-  const base =
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://127.0.0.1:4000';
+  // Use BACKEND_URL only (not NEXT_PUBLIC_API_URL) for server-side API routes
+  // NEXT_PUBLIC_API_URL should not be used to avoid direct client-side calls to backend
+  const base = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
   const id = context.params.id;
 
   const baseTrim = base.replace(/\/+$/, '');

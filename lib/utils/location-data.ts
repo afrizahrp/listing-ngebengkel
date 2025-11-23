@@ -1,6 +1,8 @@
 import { getServiceTokenWithRefresh } from './service-token-manager';
 
-const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+// For server-side calls, use BACKEND_URL only (not NEXT_PUBLIC_API_URL)
+// NEXT_PUBLIC_API_URL is for client-side direct calls, which we want to avoid
+const base = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
 const baseTrim = base.replace(/\/+$/, '');
 const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 
