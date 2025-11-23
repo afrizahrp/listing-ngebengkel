@@ -16,8 +16,12 @@ export interface LocationData {
  */
 export async function getProvinceData(idOrName: string): Promise<LocationData | null> {
   try {
+    // Trim ID to remove any trailing spaces
+    const trimmedId = idOrName.trim();
+    if (!trimmedId) return null;
+    
     const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/sys_province/${encodeURIComponent(idOrName)}`, {
+    const res = await fetch(`${apiBase}/sys_province/${encodeURIComponent(trimmedId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -30,8 +34,8 @@ export async function getProvinceData(idOrName: string): Promise<LocationData | 
       const province = data?.data || data;
       if (province && (province.id || province.name)) {
         return {
-          id: province.id || idOrName,
-          name: province.name || idOrName,
+          id: province.id || trimmedId,
+          name: province.name || trimmedId,
         };
       }
     }
@@ -48,8 +52,12 @@ export async function getProvinceData(idOrName: string): Promise<LocationData | 
  */
 export async function getCityData(idOrName: string): Promise<LocationData | null> {
   try {
+    // Trim ID to remove any trailing spaces
+    const trimmedId = idOrName.trim();
+    if (!trimmedId) return null;
+    
     const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/sys_city/${encodeURIComponent(idOrName)}`, {
+    const res = await fetch(`${apiBase}/sys_city/${encodeURIComponent(trimmedId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -62,8 +70,8 @@ export async function getCityData(idOrName: string): Promise<LocationData | null
       const city = data?.data || data;
       if (city && (city.id || city.name)) {
         return {
-          id: city.id || idOrName,
-          name: city.name || idOrName,
+          id: city.id || trimmedId,
+          name: city.name || trimmedId,
         };
       }
     }
@@ -80,8 +88,12 @@ export async function getCityData(idOrName: string): Promise<LocationData | null
  */
 export async function getDistrictData(idOrName: string): Promise<LocationData | null> {
   try {
+    // Trim ID to remove any trailing spaces
+    const trimmedId = idOrName.trim();
+    if (!trimmedId) return null;
+    
     const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/sys_district/${encodeURIComponent(idOrName)}`, {
+    const res = await fetch(`${apiBase}/sys_district/${encodeURIComponent(trimmedId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -94,8 +106,8 @@ export async function getDistrictData(idOrName: string): Promise<LocationData | 
       const district = data?.data || data;
       if (district && (district.id || district.name)) {
         return {
-          id: district.id || idOrName,
-          name: district.name || idOrName,
+          id: district.id || trimmedId,
+          name: district.name || trimmedId,
         };
       }
     }
@@ -112,8 +124,12 @@ export async function getDistrictData(idOrName: string): Promise<LocationData | 
  */
 export async function getSubdistrictData(idOrName: string): Promise<LocationData | null> {
   try {
+    // Trim ID to remove any trailing spaces
+    const trimmedId = idOrName.trim();
+    if (!trimmedId) return null;
+    
     const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/sys_subdistrict/${encodeURIComponent(idOrName)}`, {
+    const res = await fetch(`${apiBase}/sys_subdistrict/${encodeURIComponent(trimmedId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -126,8 +142,8 @@ export async function getSubdistrictData(idOrName: string): Promise<LocationData
       const subdistrict = data?.data || data;
       if (subdistrict && (subdistrict.id || subdistrict.name)) {
         return {
-          id: subdistrict.id || idOrName,
-          name: subdistrict.name || idOrName,
+          id: subdistrict.id || trimmedId,
+          name: subdistrict.name || trimmedId,
         };
       }
     }

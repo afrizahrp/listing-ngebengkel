@@ -7,9 +7,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function SubdistrictWorkshopPage() {
   const params = useParams<{ city: string; district: string; subdistrict: string }>();
-  const cityIdOrName = decodeURIComponent(params?.city ?? '');
-  const districtIdOrName = decodeURIComponent(params?.district ?? '');
-  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '');
+  const cityIdOrName = decodeURIComponent(params?.city ?? '').trim();
+  const districtIdOrName = decodeURIComponent(params?.district ?? '').trim();
+  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '').trim();
   const { data: allWorkshops, isLoading } = useWaitingLists();
   const [cityName, setCityName] = useState<string | null>(null);
   const [districtName, setDistrictName] = useState<string | null>(null);

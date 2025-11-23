@@ -10,7 +10,8 @@ export async function GET(
   // Use BACKEND_URL only (not NEXT_PUBLIC_API_URL) for server-side API routes
   // NEXT_PUBLIC_API_URL should not be used to avoid direct client-side calls to backend
   const base = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
-  const id = context.params.id;
+  // Trim ID to remove any trailing spaces that might cause 404 errors
+  const id = context.params.id.trim();
 
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;

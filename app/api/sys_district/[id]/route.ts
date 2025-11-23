@@ -7,11 +7,10 @@ export async function GET(
   request: Request,
   context: { params: { id: string } },
 ) {
-  const base =
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'http://127.0.0.1:4000';
-  const id = context.params.id;
+  // Use BACKEND_URL only (not NEXT_PUBLIC_API_URL) for server-side API routes
+  const base = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
+  // Trim ID to remove any trailing spaces that might cause 404 errors
+  const id = context.params.id.trim();
 
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;

@@ -7,9 +7,9 @@ export async function generateMetadata({
 }: {
   params: { city: string; district: string; subdistrict: string };
 }): Promise<Metadata> {
-  const cityIdOrName = decodeURIComponent(params?.city ?? '');
-  const districtIdOrName = decodeURIComponent(params?.district ?? '');
-  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '');
+  const cityIdOrName = decodeURIComponent(params?.city ?? '').trim();
+  const districtIdOrName = decodeURIComponent(params?.district ?? '').trim();
+  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '').trim();
   
   const [city, district, subdistrict] = await Promise.all([
     getCityData(cityIdOrName),
@@ -113,9 +113,9 @@ export default async function SubdistrictLayout({
   children: React.ReactNode;
   params: { city: string; district: string; subdistrict: string };
 }) {
-  const cityIdOrName = decodeURIComponent(params?.city ?? '');
-  const districtIdOrName = decodeURIComponent(params?.district ?? '');
-  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '');
+  const cityIdOrName = decodeURIComponent(params?.city ?? '').trim();
+  const districtIdOrName = decodeURIComponent(params?.district ?? '').trim();
+  const subdistrictIdOrName = decodeURIComponent(params?.subdistrict ?? '').trim();
   
   return (
     <>
