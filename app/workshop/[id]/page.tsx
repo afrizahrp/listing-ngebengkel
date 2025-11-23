@@ -50,6 +50,8 @@ export default function WorkshopDetailPage() {
   // Keyboard navigation untuk lightbox
   useEffect(() => {
     if (!isLightboxOpen) return;
+    // Check if window is available (client-side only)
+    if (typeof window === 'undefined') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
