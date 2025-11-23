@@ -113,6 +113,16 @@ export async function generateMetadata({
   ].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : 'Indonesia';
 
+  // Get workshop types for keyword generation
+  const workshopTypes = workshop.workshopTypes || [];
+  const typeNames = workshopTypes.map((t: { name?: string }) => t?.name || '').filter(Boolean);
+  const categoryNameLower = (categoryName || '').toLowerCase();
+  const typeNamesLower = typeNames.map((n: string) => n.toLowerCase());
+  
+  // Determine category type (mobil/motor) from category name
+  const isCategoryMobil = /mobil|car|automobile|otomotif/i.test(categoryNameLower);
+  const isCategoryMotor = /motor|motorcycle|sepeda motor/i.test(categoryNameLower);
+
   // Get promos for enhanced description
   const promos = await getPromos(workshop.id);
   const hasPromo = promos.length > 0;
@@ -130,20 +140,68 @@ export async function generateMetadata({
 
   const canonicalUrl = `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshopName)}`;
 
+  // Build keywords array with category and type-based keywords
+  const keywords: string[] = [
+    workshopName,
+    'bengkel',
+    categoryName,
+    ...typeNames,
+    workshop.city,
+    workshop.province,
+    'bengkel terdekat',
+  ];
+
+  // Add category-based keywords (wks_Category)
+  if (isCategoryMobil) {
+    keywords.push('bengkel mobil', 'servis mobil', 'bengkel mobil terdekat', 'servis mobil terdekat');
+  }
+  if (isCategoryMotor) {
+    keywords.push('bengkel motor', 'servis motor', 'bengkel motor terdekat', 'servis motor terdekat');
+  }
+
+  // Add combination keywords: category + type (wks_Category + wks_WorkshopType)
+  // Example: "bengkel AC mobil terdekat" jika category=mobil dan type=AC
+  // Example: "bengkel injeksi motor terdekat" jika category=motor dan type=injeksi
+  typeNames.forEach((typeName: string) => {
+    const typeNameLower = typeName.toLowerCase();
+    
+    if (isCategoryMobil) {
+      // Kombinasi: type + mobil
+      keywords.push(`bengkel ${typeNameLower} mobil`, `servis ${typeNameLower} mobil`);
+      keywords.push(`bengkel ${typeNameLower} mobil terdekat`, `servis ${typeNameLower} mobil terdekat`);
+    }
+    
+    if (isCategoryMotor) {
+      // Kombinasi: type + motor
+      keywords.push(`bengkel ${typeNameLower} motor`, `servis ${typeNameLower} motor`);
+      keywords.push(`bengkel ${typeNameLower} motor terdekat`, `servis ${typeNameLower} motor terdekat`);
+    }
+  });
+
+  // Add type-specific keywords (jika type mengandung kata kunci spesifik)
+  typeNamesLower.forEach((typeNameLower: string) => {
+    if (/ac|air conditioner|pendingin/i.test(typeNameLower)) {
+      keywords.push('bengkel AC', 'servis AC', 'bengkel AC terdekat');
+    }
+    if (/injeksi|injection/i.test(typeNameLower)) {
+      keywords.push('bengkel injeksi', 'servis injeksi', 'bengkel injeksi terdekat');
+    }
+    if (/karburator|carburetor/i.test(typeNameLower)) {
+      keywords.push('bengkel karburator', 'servis karburator', 'bengkel karburator terdekat');
+    }
+    if (/rem|brake/i.test(typeNameLower)) {
+      keywords.push('bengkel rem', 'servis rem', 'bengkel rem terdekat');
+    }
+  });
+
+  if (hasPromo) {
+    keywords.push('promo bengkel', 'diskon servis');
+  }
+
   return {
     title,
     description: fullDescription,
-    keywords: [
-      workshopName,
-      'bengkel',
-      categoryName,
-      workshop.city,
-      workshop.province,
-      'servis mobil',
-      'servis motor',
-      'bengkel terdekat',
-      ...(hasPromo ? ['promo bengkel', 'diskon servis'] : []),
-    ].filter(Boolean),
+    keywords: keywords.filter(Boolean),
     openGraph: {
       type: 'website',
       locale: 'id_ID',

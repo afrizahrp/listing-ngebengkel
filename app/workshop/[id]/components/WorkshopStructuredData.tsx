@@ -94,10 +94,73 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
   ].filter(Boolean);
   const fullAddress = locationParts.join(', ');
 
-  // Build LocalBusiness structured data
-  const localBusiness = {
+  // Determine service type based on category (wks_Category) - sesuai skema Prisma
+  // wks_WorkshopCategory.name digunakan untuk menentukan kategori utama (mobil/motor)
+  const categoryName = (workshop.categoryName || '').toLowerCase();
+  const isCategoryMobil = /mobil|car|automobile|otomotif/i.test(categoryName);
+  const isCategoryMotor = /motor|motorcycle|sepeda motor/i.test(categoryName);
+  
+  // Use specific service type based on category (wks_Category)
+  let serviceType = 'LocalBusiness';
+  if (isCategoryMobil && !isCategoryMotor) {
+    serviceType = 'AutoRepair';
+  } else if (isCategoryMotor && !isCategoryMobil) {
+    serviceType = 'MotorcycleRepair';
+  } else if (isCategoryMobil && isCategoryMotor) {
+    // Both, use AutoRepair as primary (more common)
+    serviceType = 'AutoRepair';
+  }
+
+  // Build keywords from category (wks_Category) and type (wks_WorkshopType)
+  const keywords: string[] = [];
+  if (workshop.categoryName) {
+    keywords.push(workshop.categoryName.toLowerCase());
+  }
+  
+  // Add type names (wks_WorkshopType.name)
+  const workshopTypes = workshop.workshopTypes || [];
+  const typeNames: string[] = [];
+  workshopTypes.forEach((t: { name?: string }) => {
+    if (t?.name) {
+      const typeNameLower = t.name.toLowerCase();
+      typeNames.push(typeNameLower);
+      keywords.push(typeNameLower);
+      
+      // Add combination keywords: type + category
+      if (isCategoryMobil) {
+        keywords.push(`${typeNameLower} mobil`, `bengkel ${typeNameLower} mobil terdekat`);
+      }
+      if (isCategoryMotor) {
+        keywords.push(`${typeNameLower} motor`, `bengkel ${typeNameLower} motor terdekat`);
+      }
+    }
+  });
+
+  // Build service area (AreaServed) based on location
+  const areaServed: any[] = [];
+  if (workshop.city) {
+    areaServed.push({
+      '@type': 'City',
+      name: workshop.city,
+    });
+  }
+  if (workshop.district) {
+    areaServed.push({
+      '@type': 'City',
+      name: `${workshop.district}, ${workshop.city || ''}`,
+    });
+  }
+  if (workshop.subdistrict) {
+    areaServed.push({
+      '@type': 'City',
+      name: `${workshop.subdistrict}, ${workshop.district || ''}, ${workshop.city || ''}`,
+    });
+  }
+
+  // Build LocalBusiness structured data with service type
+  const localBusiness: any = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
+    '@type': serviceType,
     '@id': `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshop.name)}`,
     name: workshop.name,
     description: workshop.description || `${workshop.name} - Bengkel terpercaya di ${workshop.city || workshop.province || 'Indonesia'}`,
@@ -118,8 +181,22 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
     email: workshop.email || undefined,
     url: `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshop.name)}`,
     priceRange: '$$',
-    ...(workshop.categoryName ? { category: workshop.categoryName } : {}),
   };
+
+  // Add category if available
+  if (workshop.categoryName) {
+    localBusiness.category = workshop.categoryName;
+  }
+
+  // Add service area if available
+  if (areaServed.length > 0) {
+    localBusiness.areaServed = areaServed;
+  }
+
+  // Add keywords as additionalType for better SEO
+  if (keywords.length > 0) {
+    localBusiness.additionalType = keywords.map(k => `https://schema.org/${k.replace(/\s+/g, '')}`);
+  }
 
   // Build Offer/Promo structured data if promos exist
   const offers = promos
