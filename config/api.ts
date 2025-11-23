@@ -1,11 +1,10 @@
 import axios from 'axios';
 import { getAnonymousId } from '@/lib/utils/anonymous-id';
 
-// Gunakan proxy Next.js (relative URL) agar token tetap di server.
-// Jika butuh akses langsung ke backend (tanpa proxy), isi NEXT_PUBLIC_API_URL.
-const baseURL =
-  (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim()) ||
-  '';
+// Gunakan proxy Next.js (relative URL) agar token tetap di server dan avoid CORS.
+// NEXT_PUBLIC_API_URL hanya untuk server-side operations (sitemap, etc).
+// Client-side harus menggunakan relative URL (/api/...) untuk avoid CORS.
+const baseURL = '';
 
 export const sysApi = axios.create({
   baseURL,
