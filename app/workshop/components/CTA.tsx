@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { BranchList } from './BranchList';
 import { SearchBar } from './SearchBar';
 import { LoadingDots } from './LoadingDots';
+import { ErrorDisplay } from '@/components/ui/error-display';
 import type { BookingBranch } from '@/types/booking';
 import { useWaitingLists as useWL } from '@/queryHooks/useWaitingList';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -40,7 +41,7 @@ interface ExtendedBranch extends BookingBranch {
 }
 
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
-  const { data: waitingLists, isLoading, isError } = useWL();
+  const { data: waitingLists, isLoading, isError, error, refetch } = useWL();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [cityNameMap, setCityNameMap] = useState<Record<string, string>>({});
@@ -209,7 +210,16 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
           {isLoading ? (
             <LoadingDots text="Memuat daftar bengkel" />
           ) : isError ? (
-            <p className="text-sm text-destructive">Gagal memuat daftar bengkel.</p>
+            <ErrorDisplay
+              title="Gagal Memuat Daftar Bengkel"
+              message="Maaf, terjadi kesalahan saat memuat daftar bengkel. Silakan coba lagi."
+              error={error instanceof Error ? error : error ? String(error) : undefined}
+              onRetry={() => {
+                void refetch();
+              }}
+              variant="compact"
+              showBackButton={false}
+            />
           ) : (
             <BranchList branches={filteredBranches} />
           )}

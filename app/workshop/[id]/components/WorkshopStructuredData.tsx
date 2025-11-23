@@ -1,7 +1,7 @@
 import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
 import { createSlug } from '@/lib/utils/slug';
 
-const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 const baseTrim = base.replace(/\/+$/, '');
 const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 

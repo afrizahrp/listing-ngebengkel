@@ -86,7 +86,7 @@ export async function initializeAnonymousSession(
   try {
     // Call backend API untuk create/register anonymous session
     const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
     const apiUrl = `${baseUrl}/api/anonymous-sessions`;
 
     const response = await fetch(apiUrl, {

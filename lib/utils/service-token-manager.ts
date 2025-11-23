@@ -75,10 +75,10 @@ export async function getServiceTokenWithRefresh(): Promise<string> {
         tokenCache = refreshed;
         return refreshed.accessToken;
       } else {
-        console.warn('[ServiceToken] ⚠️ Refresh returned null, will re-login');
+        console.log('[ServiceToken] ℹ️ Refresh returned null (token rotated or expired), will re-login');
       }
     } catch (error) {
-      console.warn('[ServiceToken] ⚠️ Failed to refresh service token, will re-login:', error);
+      console.log('[ServiceToken] ℹ️ Failed to refresh service token (will re-login):', (error as Error).message);
       // Clear cache dan re-login
       tokenCache = null;
     }
@@ -97,7 +97,7 @@ export async function getServiceTokenWithRefresh(): Promise<string> {
   const expiresInSec = Math.floor((tokens.expiresAt - Date.now()) / 1000);
   const refreshExpiresIn = Math.floor((tokens.refreshExpiresAt - Date.now()) / 1000 / 60);
   const refreshExpiresInSec = Math.floor((tokens.refreshExpiresAt - Date.now()) / 1000);
-  console.log(`[ServiceToken] ✅ Login successful!`);
+  // console.log(`[ServiceToken] ✅ Login successful!`);
   console.log(`[ServiceToken]    - Access token expires in ${expiresIn} minutes (${expiresInSec} seconds)`);
   console.log(`[ServiceToken]    - Refresh token expires in ${refreshExpiresIn} minutes (${refreshExpiresInSec} seconds)`);
 
@@ -114,7 +114,7 @@ async function loginServiceAccount(): Promise<TokenCache | null> {
   const base =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:4000';
+    'http://127.0.0.1:4000';
 
   const identity = serviceEmail || username;
   if (!identity || !password) {
@@ -216,7 +216,7 @@ async function refreshServiceToken(
   const base =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    'http://localhost:4000';
+    'http://127.0.0.1:4000';
 
   const refreshUrl = `${base.replace(/\/+$/, '')}/api/auth/refresh`;
   console.log(`[ServiceToken] 🔄 Calling refresh endpoint: ${refreshUrl}`);
@@ -233,7 +233,24 @@ async function refreshServiceToken(
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
-    console.warn(`[ServiceToken] ⚠️ Refresh failed with status ${res.status}: ${errorText}`);
+    let errorMessage = errorText;
+    
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson?.message?.[0] || errorJson?.message || errorText;
+    } catch {
+      // If not JSON, use errorText as is
+    }
+    
+    // Check if it's a token rotation issue (expected behavior)
+    if (res.status === 401 && (
+      errorMessage.includes('Invalid refresh token') ||
+      errorMessage.includes('refresh token')
+    )) {
+      console.log(`[ServiceToken] ℹ️ Refresh token was rotated (token no longer valid). This is normal - will re-login.`);
+    } else {
+      console.warn(`[ServiceToken] ⚠️ Refresh failed with status ${res.status}: ${errorMessage}`);
+    }
     // If refresh fails, return null to trigger re-login
     return null;
   }
@@ -256,10 +273,26 @@ async function refreshServiceToken(
   const accessToken =
     body?.accessToken || body?.access_token || body?.token;
   const newRefreshToken =
-    body?.refreshToken || body?.refresh_token || refreshToken; // Use new or keep old
+    body?.refreshToken || body?.refresh_token;
+  
+  // IMPORTANT: Always use new refresh token from response
+  // If server doesn't return new refresh token, it means token rotation happened
+  // and we should use the new one, not the old one
+  if (!newRefreshToken) {
+    console.warn('[ServiceToken] ⚠️ Server did not return new refresh token. Token may have been rotated.');
+    // If no new refresh token, we can't continue - will trigger re-login
+    // This is safer than using old token which may be invalid
+  }
 
   if (!accessToken) {
+    console.warn('[ServiceToken] ⚠️ No access token in refresh response');
     return null;
+  }
+  
+  if (!newRefreshToken) {
+    console.warn('[ServiceToken] ⚠️ No refresh token in response, will need to re-login on next refresh');
+    // Continue with access token, but mark that we need to re-login next time
+    // This handles case where server rotates token but doesn't return new one
   }
 
   // Calculate expiry timestamps
@@ -310,9 +343,18 @@ async function refreshServiceToken(
     refreshExpiresAt = tokenCache?.refreshExpiresAt || now + 7 * 24 * 60 * 60 * 1000;
   }
 
+  // Use new refresh token if available, otherwise keep old one (but log warning)
+  const finalRefreshToken = newRefreshToken || refreshToken;
+  
+  if (!newRefreshToken) {
+    console.warn('[ServiceToken] ⚠️ Using old refresh token (server did not return new one)');
+  } else {
+    console.log('[ServiceToken] ✅ Using new refresh token from response');
+  }
+
   return {
     accessToken,
-    refreshToken: newRefreshToken,
+    refreshToken: finalRefreshToken,
     expiresAt,
     refreshExpiresAt,
   };
