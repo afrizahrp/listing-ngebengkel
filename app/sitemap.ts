@@ -1,9 +1,43 @@
 import type { MetadataRoute } from 'next';
+import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
+import { createSlug } from '@/lib/utils/slug';
+
+const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+const baseTrim = base.replace(/\/+$/, '');
+const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 
 type WaitingListItem = {
   id: string;
+  name: string;
+  slug?: string;
+  city?: string;
+  district?: string;
+  subdistrict?: string;
   updatedAt?: string;
 };
+
+async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: string): Promise<string | null> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const endpoint = type === 'city' ? 'sys_city' : type === 'district' ? 'sys_district' : 'sys_subdistrict';
+    const res = await fetch(`${apiBase}/${endpoint}/${encodeURIComponent(id)}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const location = data?.data || data;
+      return location?.name || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
@@ -19,14 +53,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Tambahkan halaman detail workshop dari daftar WL (opsional/tergantung koneksi)
+  // Tambahkan halaman detail workshop dan lokasi dari daftar WL
   try {
-    const res = await fetch(`${baseUrl}/api/waiting-list`, {
-      // Sitemap dipanggil di server, tidak perlu kredensial browser
-      headers: { 'Content-Type': 'application/json' },
-      // Cache agar tidak menekan origin
-      next: { revalidate: 3600 },
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/waiting-list`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
     });
+
     if (res.ok) {
       const data = (await res.json()) as {
         data?: WaitingListItem[];
@@ -36,16 +73,78 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         : Array.isArray(data?.data)
           ? data.data
           : [];
+
+      // Track unique locations untuk menghindari duplikasi
+      const citySlugs = new Set<string>();
+      const districtSlugs = new Set<string>();
+      const subdistrictSlugs = new Set<string>();
+
       for (const item of items) {
+        // Add workshop detail page
+        const workshopSlug = item.slug || createSlug(item.name);
         routes.push({
-          url: `${baseUrl}/workshop/${encodeURIComponent(item.id)}`,
+          url: `${baseUrl}/workshop/${encodeURIComponent(workshopSlug)}`,
           lastModified: item.updatedAt ? new Date(item.updatedAt) : new Date(),
           changeFrequency: 'weekly',
           priority: 0.7,
         });
+
+        // Add location pages (city, district, subdistrict)
+        if (item.city) {
+          const cityName = await getLocationName('city', item.city);
+          if (cityName) {
+            const citySlug = createSlug(cityName);
+            if (!citySlugs.has(citySlug)) {
+              citySlugs.add(citySlug);
+              routes.push({
+                url: `${baseUrl}/bengkel/${encodeURIComponent(citySlug)}`,
+                lastModified: new Date(),
+                changeFrequency: 'weekly',
+                priority: 0.6,
+              });
+            }
+
+            // Add district page if available
+            if (item.district) {
+              const districtName = await getLocationName('district', item.district);
+              if (districtName) {
+                const districtSlug = createSlug(districtName);
+                const districtKey = `${citySlug}/${districtSlug}`;
+                if (!districtSlugs.has(districtKey)) {
+                  districtSlugs.add(districtKey);
+                  routes.push({
+                    url: `${baseUrl}/bengkel/${encodeURIComponent(citySlug)}/${encodeURIComponent(districtSlug)}`,
+                    lastModified: new Date(),
+                    changeFrequency: 'weekly',
+                    priority: 0.5,
+                  });
+                }
+
+                // Add subdistrict page if available
+                if (item.subdistrict) {
+                  const subdistrictName = await getLocationName('subdistrict', item.subdistrict);
+                  if (subdistrictName) {
+                    const subdistrictSlug = createSlug(subdistrictName);
+                    const subdistrictKey = `${districtKey}/${subdistrictSlug}`;
+                    if (!subdistrictSlugs.has(subdistrictKey)) {
+                      subdistrictSlugs.add(subdistrictKey);
+                      routes.push({
+                        url: `${baseUrl}/bengkel/${encodeURIComponent(citySlug)}/${encodeURIComponent(districtSlug)}/${encodeURIComponent(subdistrictSlug)}`,
+                        lastModified: new Date(),
+                        changeFrequency: 'weekly',
+                        priority: 0.4,
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
-  } catch {
+  } catch (error) {
+    console.error('Error generating sitemap:', error);
     // Abaikan error agar sitemap tetap ter-generate minimal untuk halaman utama
   }
 
