@@ -4,6 +4,7 @@
  */
 
 import { getServiceTokenWithRefresh } from './service-token-manager';
+import { ANONYMOUS_ID_COOKIE_NAME } from './anonymous-id';
 
 /**
  * Get headers untuk API request
@@ -36,7 +37,7 @@ export async function getApiHeaders(
           }
           return acc;
         }, {} as Record<string, string>);
-        anonymousIdCookie = cookies['anonymous_id'] || null;
+        anonymousIdCookie = cookies[ANONYMOUS_ID_COOKIE_NAME] || null;
       }
 
       const anonymousId = anonymousIdHeader || anonymousIdCookie;

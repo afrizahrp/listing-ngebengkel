@@ -7,7 +7,11 @@
  */
 
 const ANONYMOUS_ID_KEY = 'anonymous_id';
-const ANONYMOUS_ID_COOKIE_NAME = 'anonymous_id';
+/**
+ * Cookie name untuk anonymous_id (HTTP-only cookie)
+ * Digunakan oleh backend untuk set cookie, dan oleh frontend untuk referensi
+ */
+export const ANONYMOUS_ID_COOKIE_NAME = 'anonymous_id';
 
 /**
  * Generate UUID v4
@@ -107,7 +111,7 @@ export async function initializeAnonymousSession(
       return anonymousId;
     }
 
-    const data = await response.json();
+    await response.json();
     // Backend akan set cookie jika bisa
     return anonymousId;
   } catch (error) {

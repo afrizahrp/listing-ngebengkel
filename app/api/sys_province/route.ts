@@ -25,6 +25,7 @@ export async function GET(request: Request) {
   if (res.status === 401 && headers['Authorization']) {
     // Clear cache dan coba lagi dengan service token baru
     if (typeof global !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).cachedServiceToken = null;
     }
     const newHeaders = await getApiHeaders(request);

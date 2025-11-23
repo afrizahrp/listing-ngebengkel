@@ -36,7 +36,7 @@ export async function SubdistrictLocationStructuredData({
     mainEntity: {
       '@type': 'ItemList',
       numberOfItems: workshops.length,
-      itemListElement: workshops.slice(0, 10).map((workshop: any, index: number) => ({
+      itemListElement: workshops.slice(0, 10).map((workshop: { id: string; name: string; slug?: string; address?: string }, index: number) => ({
         '@type': 'ListItem',
         position: index + 1,
         item: {

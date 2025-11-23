@@ -29,8 +29,7 @@ export async function DistrictLocationStructuredData({
     mainEntity: {
       '@type': 'ItemList',
       numberOfItems: workshops.length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      itemListElement: workshops.slice(0, 10).map((workshop: any, index: number) => ({
+      itemListElement: workshops.slice(0, 10).map((workshop: { id: string; name: string; slug?: string }, index: number) => ({
         '@type': 'ListItem',
         position: index + 1,
         item: {

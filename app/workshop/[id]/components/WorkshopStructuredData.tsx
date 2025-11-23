@@ -1,6 +1,82 @@
 import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
 import { createSlug } from '@/lib/utils/slug';
 
+interface WorkshopItem {
+  name?: string;
+  id?: string;
+  slug?: string;
+}
+
+interface PromoItem {
+  id: string;
+  title: string;
+  description: string | null;
+  promoType: string;
+  valuePercent?: number | null;
+  valueNominal?: number | null;
+  startAt?: string | null;
+  endAt?: string | null;
+}
+
+interface StructuredDataOffer {
+  '@type': string;
+  name: string;
+  description: string;
+  category: string;
+  availability: string;
+  seller: {
+    '@id': string;
+  };
+  validFrom?: string;
+  validThrough?: string;
+  price?: string;
+  priceCurrency?: string;
+  priceSpecification?: {
+    '@type': string;
+    priceCurrency: string;
+    price: string;
+    valueAddedTaxIncluded: boolean;
+    referenceQuantity: {
+      '@type': string;
+      value: number;
+      unitCode: string;
+    };
+  };
+  [key: string]: unknown; // Allow additional properties for schema.org flexibility
+}
+
+interface StructuredDataLocalBusiness {
+  '@context': string;
+  '@type': string;
+  '@id': string;
+  name: string;
+  description: string;
+  image: string;
+  address: {
+    '@type': string;
+    streetAddress: string;
+    addressLocality: string;
+    addressRegion: string;
+    addressCountry: string;
+  };
+  geo?: {
+    '@type': string;
+    latitude: number;
+    longitude: number;
+  };
+  telephone?: string;
+  email?: string;
+  url: string;
+  priceRange: string;
+  category?: string;
+  areaServed?: Array<{
+    '@type': string;
+    name: string;
+  }>;
+  additionalType?: string[];
+  [key: string]: unknown; // Allow additional properties for schema.org flexibility
+}
+
 const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
 const baseTrim = base.replace(/\/+$/, '');
 const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
@@ -9,7 +85,7 @@ async function getWorkshopData(slugOrId: string) {
   try {
     const token = await getServiceTokenWithRefresh();
     
-    let res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
+    const res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -30,7 +106,7 @@ async function getWorkshopData(slugOrId: string) {
         const allData = await allRes.json().catch(() => ({}));
         const items = Array.isArray(allData) ? allData : (allData?.data || []);
         
-        const foundItem = items.find((item: { name?: string; id?: string; slug?: string }) => {
+        const foundItem = items.find((item: WorkshopItem) => {
           if (!item.name) return false;
           const itemSlug = item.slug || createSlug(item.name);
           return itemSlug === slugOrId || item.id === slugOrId;
@@ -85,14 +161,6 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
   }
 
   const promos = await getPromos(workshop.id);
-  const locationParts = [
-    workshop.address,
-    workshop.subdistrict,
-    workshop.district,
-    workshop.city,
-    workshop.province,
-  ].filter(Boolean);
-  const fullAddress = locationParts.join(', ');
 
   // Determine service type based on category (wks_Category) - sesuai skema Prisma
   // wks_WorkshopCategory.name digunakan untuk menentukan kategori utama (mobil/motor)
@@ -137,7 +205,7 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
   });
 
   // Build service area (AreaServed) based on location
-  const areaServed: any[] = [];
+  const areaServed: Array<{ '@type': string; name: string }> = [];
   if (workshop.city) {
     areaServed.push({
       '@type': 'City',
@@ -158,7 +226,7 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
   }
 
   // Build LocalBusiness structured data with service type
-  const localBusiness: any = {
+  const localBusiness: StructuredDataLocalBusiness = {
     '@context': 'https://schema.org',
     '@type': serviceType,
     '@id': `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshop.name)}`,
@@ -199,19 +267,10 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
   }
 
   // Build Offer/Promo structured data if promos exist
-  const offers = promos
-    .filter((promo: any) => promo && promo.title) // Filter out invalid promos
-    .map((promo: {
-      id: string;
-      title: string;
-      description: string | null;
-      promoType: string;
-      valuePercent?: number | null;
-      valueNominal?: number | null;
-      startAt?: string | null;
-      endAt?: string | null;
-    }) => {
-      const offer: any = {
+  const offers: StructuredDataOffer[] = promos
+    .filter((promo: PromoItem) => promo && promo.title) // Filter out invalid promos
+    .map((promo: PromoItem) => {
+      const offer: StructuredDataOffer = {
         '@type': 'Offer',
         name: promo.title,
         description: promo.description || promo.title,

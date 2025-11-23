@@ -29,6 +29,7 @@ export async function GET(request: Request) {
   // If unauthorized dan pakai service token, coba refresh sekali
   if (res.status === 401 && headers['Authorization']) {
     if (typeof global !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).cachedServiceToken = null;
     }
     const newHeaders = await getApiHeaders(request);

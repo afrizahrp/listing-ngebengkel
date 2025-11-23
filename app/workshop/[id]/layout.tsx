@@ -12,7 +12,7 @@ async function getWorkshopData(slugOrId: string) {
     const token = await getServiceTokenWithRefresh();
     
     // Try to fetch by ID first
-    let res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
+    const res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
