@@ -88,13 +88,19 @@ export async function initializeAnonymousSession(
   const anonymousId = getOrCreateAnonymousId();
 
   try {
-    // Call backend API untuk create/register anonymous session
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
-    // Remove trailing slashes and handle /api prefix
-    const baseTrim = baseUrl.replace(/\/+$/, '');
-    const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
-    const apiUrl = `${apiBase}/anonymous-sessions`;
+    // Use Next.js API route proxy if NEXT_PUBLIC_API_URL is not set
+    // This ensures server-side requests go through Next.js proxy
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+      ? (() => {
+          // If NEXT_PUBLIC_API_URL is set, use it directly (for client-side direct calls)
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+          const baseTrim = baseUrl.replace(/\/+$/, '');
+          const apiBase = baseTrim.endsWith('/api')
+            ? baseTrim
+            : `${baseTrim}/api`;
+          return `${apiBase}/anonymous-sessions`;
+        })()
+      : '/api/anonymous-sessions'; // Use Next.js API route proxy
 
     const response = await fetch(apiUrl, {
       method: 'POST',
