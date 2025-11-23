@@ -6,7 +6,7 @@
   --radius: 0.625rem;
   --background: 210 100% 98%;
   --foreground: 205 95% 29%;
-  --card: 210 100% 99%;
+  --card: 0 0% 99%;
   --card-foreground: 205 95% 29%;
   --popover: 0 0% 100%;
   --popover-foreground: 205 95% 29%;
@@ -45,7 +45,7 @@
 .light {
   --background: 210 100% 98%;
   --foreground: 205 95% 29%;
-  --card: 210 100% 99%;
+  --card: 0 0% 99%;
   --card-foreground: 205 95% 29%;
   --popover: 0 0% 100%;
   --popover-foreground: 205 95% 29%;

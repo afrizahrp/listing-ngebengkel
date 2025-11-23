@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { Card, CardTitle } from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
@@ -43,7 +42,7 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
       {branches.map((branch, index) => {
         const rawPhone = (branch.phone || '').trim()
         const digitsOnly = rawPhone.replace(/[^0-9]/g, '')
@@ -76,10 +75,11 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
             key={`branch-${branch.id}-${index}`}
             className={cn(
               "group relative overflow-hidden transition-all duration-300",
-              "hover:shadow-lg hover:shadow-shadow-hover",
-              "border border-gray-100 bg-card",
+              "hover:shadow-xl hover:shadow-primary/5",
+              "border border-gray-200/60 bg-card",
               "cursor-pointer",
-              "flex flex-col h-full"
+              "flex flex-col h-full",
+              "rounded-xl"
             )}
             role="button"
             tabIndex={0}
@@ -94,106 +94,99 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
               <div className="absolute top-0 left-0 z-10">
                 <Badge 
                   className={cn(
-                    "bg-yellow-50 text-yellow-800 border-yellow-200",
-                    "px-2.5 py-1 text-xs font-semibold",
-                    "rounded-br-lg rounded-tl-none rounded-tr-none rounded-bl-none",
-                    "shadow-sm"
+                    "bg-yellow-50 text-yellow-800 border-yellow-200/60",
+                    "px-3 py-1.5 text-xs font-semibold",
+                    "rounded-br-xl rounded-tl-none rounded-tr-none rounded-bl-none",
+                    "shadow-md"
                   )}
                 >
-                  <Sparkles className="h-3 w-3 mr-1" />
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   Promo
                 </Badge>
               </div>
             )}
-            <div className="p-4 md:p-5 flex flex-col flex-1 min-h-0">
+            {/* Logo - Pojok Kanan Atas */}
+            {branch.logo && (
+              <div className="absolute top-0 right-0 z-10 p-3" onClick={(e) => e.stopPropagation()}>
+                <Image
+                  src={branch.logo}
+                  alt={`${branch.name} logo`}
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-md object-cover ring-1 ring-border/30 shadow-sm"
+                />
+              </div>
+            )}
+            <div className="p-6 flex flex-col flex-1 min-h-0">
               {/* Content Section - Can grow */}
-              <div className="flex flex-col flex-1 space-y-3 min-h-0">
+              <div className="flex flex-col flex-1 space-y-4 min-h-0">
                 {/* Header Section */}
-                <div className={cn("space-y-2", branch.promoPreview && "mt-6")}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base md:text-lg font-semibold text-card-foreground leading-tight line-clamp-1 truncate">
-                      {branch.name}
-                    </CardTitle>
-                    {branch.company?.name && (
-                      <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-1">{branch.company.name}</p>
-                    )}
-                  </div>
-                  {branch.logo && (
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <Image
-                        src={branch.logo}
-                        alt={`${branch.name} logo`}
-                        width={32}
-                        height={32}
-                        className="h-8 w-8 rounded-lg object-cover ring-1 ring-border"
-                      />
-                    </div>
+                <div className={cn("space-y-3", branch.promoPreview && "mt-8", branch.logo && "pr-10")}>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-sm md:text-base font-semibold text-card-foreground leading-snug">
+                    {branch.name}
+                  </CardTitle>
+                  {branch.company?.name && (
+                    <p className="text-sm text-muted-foreground mt-1.5 line-clamp-1">{branch.company.name}</p>
                   )}
                 </div>
                 
                 {branch.typeName && (
-                  <Badge variant="secondary" className="text-xs font-medium">
+                  <Badge variant="secondary" className="w-fit text-xs font-medium px-2.5 py-1">
                     {branch.typeName}
                   </Badge>
                 )}
                 
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  <p className="text-xs md:text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <p className="text-sm">
                     {branch.city || 'Kota tidak tersedia'}
                   </p>
                 </div>
               </div>
 
-              <Separator className="my-3" />
-
               {/* Action Area Container - Container Terpisah untuk WhatsApp & Promo */}
-              <div className="mt-auto shrink-0 pt-4 space-y-3 border-t border-gray-100">
+              <div className="mt-6 pt-6 shrink-0 space-y-3 border-t border-gray-100/80">
                 {/* WhatsApp Button */}
                 {waLink && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "w-full gap-1.5 rounded-full",
-                        "transition-all duration-200",
-                        "focus:outline-none"
-                      )}
-                      style={{
-                        borderColor: 'rgba(22, 163, 74, 0.5)',
-                        color: '#16A34A',
-                        backgroundColor: 'transparent'
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="default"
+                    className={cn(
+                      "w-full gap-2 rounded-lg",
+                      "transition-all duration-200",
+                      "focus:outline-none",
+                      "h-10"
+                    )}
+                    style={{
+                      borderColor: 'rgba(22, 163, 74, 0.4)',
+                      color: '#16A34A',
+                      backgroundColor: 'transparent'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Hubungi via WhatsApp"
+                      title={normalized}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#16A34A';
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#16A34A';
                       }}
-                      onClick={(e) => e.stopPropagation()}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#16A34A';
+                        e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.4)';
+                      }}
                     >
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Hubungi via WhatsApp"
-                        title={normalized}
-                        style={{
-                          borderColor: 'rgba(22, 163, 74, 0.5)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#16A34A';
-                          e.currentTarget.style.color = '#FFFFFF';
-                          e.currentTarget.style.borderColor = '#16A34A';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.color = '#16A34A';
-                          e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.5)';
-                        }}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
-                    </Button>
-                  </div>
+                      <MessageCircle className="h-4 w-4" />
+                      <span className="font-medium">WhatsApp</span>
+                    </a>
+                  </Button>
                 )}
 
                 {/* Collapsible Promo Section */}
@@ -201,7 +194,7 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                   <div className="shrink-0">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="default"
                       onClick={(e) => {
                         e.stopPropagation();
                         const branchIdStr = String(branch.id).trim();
@@ -219,10 +212,10 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                       }}
                       className={cn(
                         "w-full flex items-center justify-between gap-2",
-                        "px-3 py-2 rounded-lg",
+                        "px-4 py-2.5 rounded-lg h-10",
                         "transition-all duration-300",
                         "focus:outline-none",
-                        "text-primary border-primary",
+                        "text-primary border-primary/60",
                         "hover:!bg-primary hover:!text-white hover:!border-primary",
                         isPromoExpanded && "rounded-b-none"
                       )}
@@ -237,21 +230,21 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
                         e.currentTarget.style.color = 'hsl(var(--primary))';
-                        e.currentTarget.style.borderColor = 'hsl(var(--primary))';
+                        e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.6)';
                       }}
                       aria-expanded={!!isPromoExpanded}
                       aria-controls={`promo-content-${branch.id}`}
                     >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                        <span className="font-semibold text-xs truncate">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Sparkles className="h-4 w-4 shrink-0" />
+                        <span className="font-semibold text-sm truncate">
                           {promo?.title ?? '🎉 Promo'}
                         </span>
                       </div>
                       {isPromoExpanded ? (
-                        <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronUp className="h-4 w-4 shrink-0" />
                       ) : (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronDown className="h-4 w-4 shrink-0" />
                       )}
                     </Button>
                     
@@ -262,19 +255,19 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                         isPromoExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                       )}
                     >
-                      <div className="px-3 py-2 bg-background border border-primary/20 rounded-b-lg mt-1">
-                        <div className="text-xs text-foreground space-y-1.5">
+                      <div className="px-4 py-3 bg-background border border-primary/20 rounded-b-lg mt-0.5">
+                        <div className="text-sm text-foreground space-y-2">
                           {checklist.length > 0 ? (
-                            <ul className="space-y-1">
+                            <ul className="space-y-2">
                               {checklist.map((item, idx) => (
-                                <li key={idx} className="flex items-start gap-1.5">
-                                  <span className="text-primary mt-0.5 shrink-0 text-xs">✓</span>
-                                  <span className="flex-1 text-xs leading-relaxed">{item}</span>
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="text-primary mt-0.5 shrink-0 text-sm font-medium">✓</span>
+                                  <span className="flex-1 text-sm leading-relaxed">{item}</span>
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-xs">{promo?.title ?? 'Promo tersedia'}</p>
+                            <p className="text-sm">{promo?.title ?? 'Promo tersedia'}</p>
                           )}
                         </div>
                       </div>
