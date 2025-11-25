@@ -26,6 +26,18 @@ export const SYS_ENDPOINTS = {
     categories: '/waiting-list/categories',
     checkAvailability: '/waiting-list/check-availability',
   },
+  images: {
+    base: '/api/wks/images',
+    byId: (id: string) => `/api/wks/images/${id}`,
+    byWaitingList: (waitingListId: string) => `/api/wks/images?waitingListId=${waitingListId}`,
+    byBranch: (branchId: string) => `/api/wks/images?branchId=${branchId}`,
+  },
+  videos: {
+    base: '/api/wks/videos',
+    byId: (id: string) => `/api/wks/videos/${id}`,
+    byWaitingList: (waitingListId: string) => `/api/wks/videos?waitingListId=${waitingListId}`,
+    byBranch: (branchId: string) => `/api/wks/videos?branchId=${branchId}`,
+  },
 } as const;
 
 export type SysEndpointGroup = keyof typeof SYS_ENDPOINTS;

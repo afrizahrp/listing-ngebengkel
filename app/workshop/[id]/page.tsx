@@ -2,11 +2,14 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useWaitingList } from '@/queryHooks/useWaitingList';
+import { useWorkshopImages } from '@/queryHooks/useWorkshopImages';
+import { useWorkshopVideos } from '@/queryHooks/useWorkshopVideos';
+import { useCityName, useProvinceName, useDistrictName, useSubdistrictName } from '@/queryHooks/useLocationNames';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { WorkshopMap } from '../components/WorkshopMap';
 
@@ -19,18 +22,57 @@ export default function WorkshopDetailPage() {
   // useWaitingList akan handle pencarian berdasarkan slug
   const { data, isLoading, isError } = useWaitingList(slugOrId, { enabled: Boolean(slugOrId) });
   
-  // State untuk menyimpan nama wilayah
-  const [provinceName, setProvinceName] = useState<string | null>(null);
-  const [cityName, setCityName] = useState<string | null>(null);
-  const [districtName, setDistrictName] = useState<string | null>(null);
-  const [subdistrictName, setSubdistrictName] = useState<string | null>(null);
+  // Fetch images dan videos untuk workshop ini
+  // Trim ID untuk menghilangkan spasi yang tidak perlu
+  const waitingListId = data?.id?.trim();
+  const { data: images = [], isLoading: isLoadingImages, isError: isErrorImages } = useWorkshopImages(
+    waitingListId,
+    null,
+    { enabled: Boolean(waitingListId) },
+  );
+  const { data: videos = [] } = useWorkshopVideos(
+    waitingListId,
+    null,
+    { enabled: Boolean(waitingListId) },
+  );
+  
+  // Fetch nama wilayah menggunakan React Query untuk caching otomatis
+  const { data: cityName } = useCityName(data?.city, { enabled: Boolean(data?.city) });
+  const { data: provinceName } = useProvinceName(data?.province, { enabled: Boolean(data?.province) });
+  const { data: districtName } = useDistrictName(data?.district, { enabled: Boolean(data?.district) });
+  const { data: subdistrictName } = useSubdistrictName(data?.subdistrict, { enabled: Boolean(data?.subdistrict) });
 
-  // Generate gallery images (semua gambar dari 1-7 sebagai sample)
+  // Debug logging
+  useEffect(() => {
+    if (waitingListId) {
+      console.log('[WorkshopDetail] WaitingList ID (trimmed):', waitingListId);
+      console.log('[WorkshopDetail] WaitingList ID (original):', data?.id);
+      console.log('[WorkshopDetail] Images data:', images);
+      console.log('[WorkshopDetail] Images loading:', isLoadingImages);
+      console.log('[WorkshopDetail] Images error:', isErrorImages);
+    }
+  }, [waitingListId, data?.id, images, isLoadingImages, isErrorImages]);
+
+  // Generate gallery images dari API atau fallback ke sample images
   const galleryImages = useMemo(() => {
-    // Untuk demo, gunakan semua gambar dari 1-7
-    // Di production, ini bisa dari data.facebookImages atau data.gallery
+    if (images.length > 0) {
+      // Sort by seq, then by isPrimary (primary first), then by createdAt
+      const sorted = [...images].sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        if (a.seq !== null && b.seq !== null) return a.seq - b.seq;
+        if (a.seq !== null) return -1;
+        if (b.seq !== null) return 1;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+      const urls = sorted.map((img) => img.imageURL);
+      console.log('[WorkshopDetail] Gallery images URLs:', urls);
+      return urls;
+    }
+    // Fallback ke sample images jika belum ada
+    console.log('[WorkshopDetail] No images found, using fallback');
     return Array.from({ length: 7 }, (_, i) => `/images/${i + 1}.png`);
-  }, []);
+  }, [images]);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -67,96 +109,6 @@ export default function WorkshopDetailPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, galleryImages.length]);
 
-  // Helper function untuk fetch dengan retry (handle rate limit 429)
-  const fetchWithRetry = async (url: string, retries = 3, delay = 500): Promise<{ name?: string; data?: { name?: string } } | null> => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        
-        if (res.status === 429) {
-          // Rate limit - tunggu dan retry
-          if (i < retries - 1) {
-            await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
-            continue;
-          }
-          return null;
-        }
-        
-        if (res.ok) {
-          return await res.json().catch(() => null);
-        }
-        
-        if (res.status === 404) {
-          // Endpoint tidak ada
-          return null;
-        }
-        
-        return null;
-      } catch {
-        if (i === retries - 1) return null;
-        await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
-      }
-    }
-    return null;
-  };
-
-  // Fetch nama wilayah (sequential dengan delay untuk avoid rate limit)
-  useEffect(() => {
-    if (!data) return;
-
-    const fetchLocationNames = async () => {
-      // Fetch secara sequential dengan delay lebih besar untuk menghindari rate limit
-      
-      // Fetch Province Name
-      if (data.province) {
-        const provinceData = await fetchWithRetry(`/api/sys_province/${encodeURIComponent(data.province.trim())}`, 3, 1000);
-        if (provinceData) {
-          const name = provinceData?.name || provinceData?.data?.name;
-          if (name && name.trim() && name !== data.province) {
-            setProvinceName(name.trim());
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, 500)); // Delay antar request
-      }
-
-      // Fetch City Name (bisa pakai batch jika ada, tapi untuk 1 item lebih simple pakai individual)
-      if (data.city) {
-        const cityData = await fetchWithRetry(`/api/sys_city/${encodeURIComponent(data.city.trim())}`, 3, 1000);
-        if (cityData) {
-          const name = cityData?.name || cityData?.data?.name;
-          if (name && name.trim() && name !== data.city) {
-            setCityName(name.trim());
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      // Fetch District Name
-      if (data.district) {
-        const districtData = await fetchWithRetry(`/api/sys_district/${encodeURIComponent(data.district.trim())}`, 3, 1000);
-        if (districtData) {
-          const name = districtData?.name || districtData?.data?.name;
-          if (name && name.trim() && name !== data.district) {
-            setDistrictName(name.trim());
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      // Fetch Subdistrict Name (jika ada field subdistrict dan endpoint tersedia)
-      if (data.subdistrict) {
-        const subdistrictData = await fetchWithRetry(`/api/sys_subdistrict/${encodeURIComponent(data.subdistrict.trim())}`, 2, 1000);
-        if (subdistrictData) {
-          const name = subdistrictData?.name || subdistrictData?.data?.name;
-          if (name && name.trim() && name !== data.subdistrict) {
-            setSubdistrictName(name.trim());
-          }
-        }
-      }
-    };
-
-    void fetchLocationNames();
-  }, [data]);
 
   // Generate Google Maps search URL (gratis, tidak perlu API key)
   // Lebih reliable untuk pencarian alamat di Indonesia dibanding OpenStreetMap search
@@ -261,18 +213,26 @@ export default function WorkshopDetailPage() {
           </div>
 
           {/* Gallery Carousel */}
-          <Card className="overflow-hidden">
-            <div className="relative h-64 md:h-80 w-full bg-gray-100">
-              {/* Main Image */}
-              <div className="relative h-full w-full">
-                <Image
-                  src={galleryImages[currentImageIndex]}
-                  alt={`${data.name} - Image ${currentImageIndex + 1}`}
-                  fill
-                  className="object-cover cursor-pointer"
-                  priority
-                  onClick={() => setIsLightboxOpen(true)}
-                />
+          {galleryImages.length > 0 && (
+            <Card className="overflow-hidden">
+              <div className="relative h-64 md:h-80 w-full bg-gray-100">
+                {/* Main Image */}
+                <div className="relative h-full w-full">
+                  <Image
+                    src={galleryImages[currentImageIndex] || galleryImages[0]}
+                    alt={`${data.name} - Image ${currentImageIndex + 1}`}
+                    fill
+                    className="object-cover cursor-pointer"
+                    priority
+                    onClick={() => setIsLightboxOpen(true)}
+                    unoptimized={true}
+                    onError={(e) => {
+                      console.error('[WorkshopDetail] Image load error:', galleryImages[currentImageIndex], e);
+                    }}
+                    onLoad={() => {
+                      console.log('[WorkshopDetail] Image loaded:', galleryImages[currentImageIndex]);
+                    }}
+                  />
                 
                 {/* Navigation Buttons */}
                 {galleryImages.length > 1 && (
@@ -329,6 +289,10 @@ export default function WorkshopDetailPage() {
                           alt={`Thumbnail ${idx + 1}`}
                           fill
                           className="object-cover"
+                          unoptimized={true}
+                          onError={(e) => {
+                            console.error('[WorkshopDetail] Thumbnail load error:', img, e);
+                          }}
                         />
                       </button>
                     ))}
@@ -337,6 +301,72 @@ export default function WorkshopDetailPage() {
               )}
             </div>
           </Card>
+          )}
+
+          {/* Videos Section */}
+          {videos.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Video className="h-5 w-5 text-primary" />
+                  Video Bengkel
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {videos
+                    .sort((a, b) => {
+                      if (a.isPrimary && !b.isPrimary) return -1;
+                      if (!a.isPrimary && b.isPrimary) return 1;
+                      if (a.seq !== null && b.seq !== null) return a.seq - b.seq;
+                      return 0;
+                    })
+                    .map((video) => (
+                      <div
+                        key={video.id}
+                        className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 group cursor-pointer"
+                        onClick={() => window.open(video.videoURL, '_blank')}
+                      >
+                        {video.thumbnailURL ? (
+                          <Image
+                            src={video.thumbnailURL}
+                            alt={video.title || `Video ${video.id}`}
+                            fill
+                            className="object-cover"
+                            unoptimized={video.thumbnailURL.startsWith('http')}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                            <Video className="w-16 h-16 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-colors">
+                          <div className="bg-white/90 rounded-full p-4">
+                            <Play className="w-8 h-8 text-gray-900 ml-1" fill="currentColor" />
+                          </div>
+                        </div>
+                        {video.duration && (
+                          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            {Math.floor(video.duration / 60)}:
+                            {String(Math.floor(video.duration % 60)).padStart(2, '0')}
+                          </div>
+                        )}
+                        {video.isPrimary && (
+                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                            Utama
+                          </div>
+                        )}
+                        {video.title && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                            <p className="text-white text-sm font-medium">{video.title}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Description */}
           {data.description && (
@@ -367,12 +397,13 @@ export default function WorkshopDetailPage() {
               
               <div className="relative max-w-6xl w-full h-full flex items-center justify-center">
                 <Image
-                  src={galleryImages[currentImageIndex]}
+                  src={galleryImages[currentImageIndex] || galleryImages[0]}
                   alt={`${data.name} - Image ${currentImageIndex + 1}`}
                   width={1200}
                   height={800}
                   className="max-w-full max-h-full object-contain"
                   onClick={(e) => e.stopPropagation()}
+                  unoptimized={galleryImages[currentImageIndex]?.startsWith('http')}
                 />
                 
                 {galleryImages.length > 1 && (

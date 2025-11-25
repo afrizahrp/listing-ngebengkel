@@ -105,6 +105,28 @@ export async function GET(
     cache: 'no-store',
   });
 
+  // Handle 401 - retry with fresh token
+  if (res.status === 401) {
+    try {
+      cachedToken = null;
+      cachedTokenExp = null;
+      token = await getServiceToken();
+      res = await fetch(target, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to refresh token';
+      return NextResponse.json(
+        { message, error: 'Unauthorized' },
+        { status: 401 },
+      );
+    }
+  }
+
   // Jika tidak ditemukan dengan ID, coba cari berdasarkan slug (nama)
   if (res.status === 404) {
     try {
@@ -132,30 +154,36 @@ export async function GET(
           return NextResponse.json(foundItem, { status: 200 });
         }
       }
-    } catch {
-      // Fallback ke error original
+      
+      // Jika masih tidak ditemukan setelah search by slug
+      return NextResponse.json(
+        { message: 'Waiting list tidak ditemukan', error: 'Not Found' },
+        { status: 404 },
+      );
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Error searching waiting list';
+      return NextResponse.json(
+        { message, error: 'Internal Server Error' },
+        { status: 500 },
+      );
     }
   }
 
-  if (res.status === 401) {
-    try {
-      cachedToken = null;
-      cachedTokenExp = null;
-      token = await getServiceToken();
-      res = await fetch(target, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
-      });
-    } catch {
-      // fallthrough
-    }
+  // Handle error responses
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+    return NextResponse.json(
+      { 
+        message: errorData.message || `Error: ${res.status}`,
+        error: errorData.error || 'Request failed',
+      },
+      { status: res.status },
+    );
   }
 
+  // Success response
   const data = await res.json().catch(() => ({}));
-  return NextResponse.json(data, { status: res.status });
+  return NextResponse.json(data, { status: 200 });
 }
 
 
