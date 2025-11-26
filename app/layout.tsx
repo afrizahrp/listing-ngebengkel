@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
 import { QueryProvider } from '@/providers/query-client-provider';
+import { ToastProvider } from '@/providers/toast-provider';
+
 import keywordsData from '@/data/keywords.json';
 
 
@@ -109,7 +111,7 @@ export default function RootLayout({
         <PageViewTrackerWrapper />
         <AnonymousSessionInitializer />
         <QueryProvider>
-          {children}
+            <ToastProvider>{children}</ToastProvider>
         </QueryProvider>
       </body>
     </html>

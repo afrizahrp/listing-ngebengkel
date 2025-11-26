@@ -38,6 +38,7 @@ interface WaitingListListItem {
 interface ExtendedBranch extends BookingBranch {
   typeName?: string | null;
   promoPreview?: WaitingListListItem['promoPreview'];
+  claimStatus?: string | null;
 }
 
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
@@ -143,6 +144,8 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
         slots: [],
         typeName,
         promoPreview: item.promoPreview ?? null,
+        // Pastikan interface WaitingListListItem di-update jika backend sudah mengirim claimStatus
+        claimStatus: (item as WaitingListListItem & { claimStatus?: string | null }).claimStatus ?? null,
       };
       return b;
     });

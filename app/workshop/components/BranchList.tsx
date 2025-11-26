@@ -4,12 +4,14 @@ import Image from 'next/image'
 import { Card, CardTitle } from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
 // Removed SlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
 import { createSlug } from '@/lib/utils/slug'
+import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop'
+import { toast } from 'sonner'
 
 
 type PromoPreview = {
@@ -22,6 +24,7 @@ type PromoPreview = {
 type BranchItem = BookingBranch & {
   typeName?: string | null;
   promoPreview?: PromoPreview;
+  claimStatus?: string | null;
 };
 
 type BranchListProps = {
@@ -32,6 +35,10 @@ type BranchListProps = {
 export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const router = useRouter()
   const [openPromoIds, setOpenPromoIds] = useState<Set<string>>(new Set())
+  // Track branch yang sudah berhasil diklaim di sisi UI (tanpa reload)
+  const [locallyClaimedIds, setLocallyClaimedIds] = useState<Set<string>>(new Set())
+  const [claimingBranchId, setClaimingBranchId] = useState<string | null>(null)
+  const claimMutation = useClaimWorkshop()
   if (branches.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -69,6 +76,60 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
         const isPromoExpanded = branchIdStr !== null && openPromoIds.has(branchIdStr) && !!branch.promoPreview
         const promo = branch.promoPreview
         const checklist = Array.isArray(promo?.checklist) ? promo!.checklist! : []
+        
+        // Check claim status
+        const isAlreadyClaimedFromApi =
+          !!branch.claimStatus && branch.claimStatus !== 'UNCLAIMED'
+        const isLocallyClaimed =
+          !!branchIdStr && locallyClaimedIds.has(branchIdStr)
+        const isUnclaimed = !isAlreadyClaimedFromApi && !isLocallyClaimed
+        
+        const handleClaim = async (e: React.MouseEvent) => {
+          e.stopPropagation()
+          e.preventDefault()
+          
+          if (!branch.id) return
+          
+          // Trim ID untuk menghilangkan spasi
+          const trimmedId = String(branch.id).trim()
+          if (!trimmedId) return
+          
+          // Prevent multiple clicks
+          if (claimingBranchId === trimmedId) return
+          
+          // Set claiming state untuk branch ini saja
+          setClaimingBranchId(trimmedId)
+          
+          // TODO: Show modal/form untuk input phone, name, email
+          // Untuk sekarang, gunakan data dari branch
+          try {
+            await claimMutation.mutateAsync({
+              waitingListId: trimmedId,
+              phone: branch.phone || '',
+              name: branch.name,
+            })
+            // Tandai sebagai sudah diklaim di sisi UI
+            setLocallyClaimedIds((prev) => {
+              const next = new Set(prev)
+              next.add(trimmedId)
+              return next
+            })
+            toast.success('Klaim Berhasil', {
+              description: 'Silakan cek WhatsApp untuk kode verifikasi.',
+            })
+          } catch (error: unknown) {
+            const description =
+              error instanceof Error
+                ? error.message || 'Terjadi kesalahan saat mengklaim bengkel.'
+                : 'Terjadi kesalahan saat mengklaim bengkel.'
+            toast.error('Gagal Klaim', {
+              description,
+            })
+          } finally {
+            // Reset claiming state setelah selesai
+            setClaimingBranchId(null)
+          }
+        }
         
         return (
           <Card
@@ -147,6 +208,28 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
 
               {/* Action Area Container - Container Terpisah untuk WhatsApp & Promo */}
               <div className="mt-6 pt-6 shrink-0 space-y-3 border-t border-gray-100/80">
+                {/* Claim Button - Tampilkan jika unclaimed */}
+                {isUnclaimed && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className={cn(
+                      "w-full gap-2 rounded-lg",
+                      "transition-all duration-200",
+                      "focus:outline-none",
+                      "h-10",
+                      "border-blue-200 text-blue-700 hover:bg-blue-50"
+                    )}
+                    onClick={handleClaim}
+                    disabled={claimingBranchId === branchIdStr || claimMutation.isPending}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="font-medium">
+                      {claimingBranchId === branchIdStr ? 'Memproses...' : 'Klaim Bengkel Ini'}
+                    </span>
+                  </Button>
+                )}
+                
                 {/* WhatsApp Button */}
                 {waLink && (
                   <Button
