@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { WorkshopMap } from '../components/WorkshopMap';
+import { ListingDisclaimer } from '../components/ListingDisclaimer';
 
 export default function WorkshopDetailPage() {
   const params = useParams<{ id: string }>();
@@ -588,6 +589,9 @@ export default function WorkshopDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Disclaimer */}
+      <ListingDisclaimer />
     </main>
   );
 }

@@ -14,6 +14,7 @@ type WaitingListItem = {
   district?: string;
   subdistrict?: string;
   updatedAt?: string;
+  workshopTypes?: Array<{ id: string; name: string }>;
 };
 
 async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: string): Promise<string | null> {
@@ -36,6 +37,40 @@ async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: st
     return null;
   } catch {
     return null;
+  }
+}
+
+async function getAllWorkshopTypes(): Promise<Array<{ id: string; name: string }>> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/waiting-list/categories`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const categories = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      const types: Array<{ id: string; name: string }> = [];
+      
+      for (const category of categories) {
+        if (Array.isArray(category.types)) {
+          for (const type of category.types) {
+            if (type.id && type.name) {
+              types.push({ id: type.id, name: type.name });
+            }
+          }
+        }
+      }
+      
+      return types;
+    }
+    return [];
+  } catch {
+    return [];
   }
 }
 
@@ -78,6 +113,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const citySlugs = new Set<string>();
       const districtSlugs = new Set<string>();
       const subdistrictSlugs = new Set<string>();
+      const typeCitySlugs = new Set<string>();
+      const typeCityDistrictSlugs = new Set<string>();
+
+      // Get all workshop types
+      const allTypes = await getAllWorkshopTypes();
 
       for (const item of items) {
         // Add workshop detail page
@@ -136,6 +176,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                       });
                     }
                   }
+                }
+
+                // Add type + city + district pages
+                if (item.workshopTypes && Array.isArray(item.workshopTypes) && item.workshopTypes.length > 0) {
+                  const workshopType = item.workshopTypes[0];
+                  if (workshopType?.id && workshopType?.name) {
+                    const typeSlug = createSlug(workshopType.name);
+                    const typeCityDistrictKey = `${typeSlug}/${citySlug}/${districtSlug}`;
+                    if (!typeCityDistrictSlugs.has(typeCityDistrictKey)) {
+                      typeCityDistrictSlugs.add(typeCityDistrictKey);
+                      routes.push({
+                        url: `${baseUrl}/cari-bengkel/${encodeURIComponent(typeSlug)}/${encodeURIComponent(citySlug)}/${encodeURIComponent(districtSlug)}`,
+                        lastModified: new Date(),
+                        changeFrequency: 'weekly',
+                        priority: 0.65,
+                      });
+                    }
+                  }
+                }
+              }
+            }
+
+            // Add type + city pages
+            if (item.workshopTypes && Array.isArray(item.workshopTypes) && item.workshopTypes.length > 0) {
+              const workshopType = item.workshopTypes[0];
+              if (workshopType?.id && workshopType?.name) {
+                const typeSlug = createSlug(workshopType.name);
+                const typeCityKey = `${typeSlug}/${citySlug}`;
+                if (!typeCitySlugs.has(typeCityKey)) {
+                  typeCitySlugs.add(typeCityKey);
+                  routes.push({
+                    url: `${baseUrl}/cari-bengkel/${encodeURIComponent(typeSlug)}/${encodeURIComponent(citySlug)}`,
+                    lastModified: new Date(),
+                    changeFrequency: 'weekly',
+                    priority: 0.7,
+                  });
                 }
               }
             }

@@ -1,4 +1,5 @@
 import { getServiceTokenWithRefresh } from './service-token-manager';
+import { createSlug } from './slug';
 
 // For server-side calls, use BACKEND_URL only (not NEXT_PUBLIC_API_URL)
 // NEXT_PUBLIC_API_URL is for client-side direct calls, which we want to avoid
@@ -156,6 +157,54 @@ export async function getSubdistrictData(idOrName: string): Promise<LocationData
 }
 
 /**
+ * Get workshop type data by ID or name
+ */
+export async function getWorkshopTypeData(idOrName: string): Promise<LocationData | null> {
+  try {
+    const trimmedId = idOrName.trim();
+    if (!trimmedId) return null;
+    
+    const token = await getServiceTokenWithRefresh();
+    // Get all categories first, then find type in their types array
+    const res = await fetch(`${apiBase}/waiting-list/categories`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const categories = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      
+      // Search for type in all categories
+      for (const category of categories) {
+        if (Array.isArray(category.types)) {
+          const type = category.types.find((t: { id?: string; name?: string }) => 
+            t.id?.trim() === trimmedId || 
+            t.name?.toLowerCase().trim() === trimmedId.toLowerCase() ||
+            createSlug(t.name || '').toLowerCase() === trimmedId.toLowerCase()
+          );
+          
+          if (type) {
+            return {
+              id: type.id || trimmedId,
+              name: type.name || trimmedId,
+            };
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching workshop type data:', error);
+    return null;
+  }
+}
+
+/**
  * Get all workshops filtered by location
  */
 export async function getWorkshopsByLocation(filters: {
@@ -201,6 +250,67 @@ export async function getWorkshopsByLocation(filters: {
     return [];
   } catch (error) {
     console.error('Error fetching workshops by location:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all workshops filtered by type and location
+ */
+export async function getWorkshopsByTypeAndLocation(filters: {
+  typeId?: string;
+  province?: string;
+  city?: string;
+  district?: string;
+  subdistrict?: string;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any[]> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/waiting-list`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const items = Array.isArray(data) ? data : (data?.data || []);
+      
+      // Filter by type and location IDs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return items.filter((item: any) => {
+        // Filter by type
+        if (filters.typeId) {
+          const workshopTypes = item.workshopTypes || [];
+          const hasType = workshopTypes.some((t: { id?: string }) => 
+            t.id?.trim() === filters.typeId?.trim()
+          );
+          if (!hasType) return false;
+        }
+        
+        // Filter by location
+        if (filters.subdistrict && item.subdistrict?.trim() !== filters.subdistrict.trim()) {
+          return false;
+        }
+        if (filters.district && item.district?.trim() !== filters.district.trim()) {
+          return false;
+        }
+        if (filters.city && item.city?.trim() !== filters.city.trim()) {
+          return false;
+        }
+        if (filters.province && item.province?.trim() !== filters.province.trim()) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error fetching workshops by type and location:', error);
     return [];
   }
 }
