@@ -27,10 +27,25 @@ export default function TypeCityWorkshopPage() {
           
           for (const category of categories) {
             if (Array.isArray(category.types)) {
-              const type = category.types.find((t: { id?: string; name?: string }) => 
+              const normalizedInput = typeIdOrName.toLowerCase().trim();
+              
+              // First try: exact match
+              let type = category.types.find((t: { id?: string; name?: string }) => 
                 t.id?.trim() === typeIdOrName.trim() || 
-                t.name?.toLowerCase().trim() === typeIdOrName.toLowerCase()
+                t.name?.toLowerCase().trim() === normalizedInput
               );
+              
+              // Second try: partial match (if exact match not found)
+              if (!type) {
+                type = category.types.find((t: { id?: string; name?: string }) => {
+                  if (!t.name) return false;
+                  const typeNameLower = t.name.toLowerCase();
+                  // Check if input matches part of type name
+                  return typeNameLower.includes(normalizedInput) || 
+                         normalizedInput.includes(typeNameLower);
+                });
+              }
+              
               if (type?.name) {
                 setTypeName(type.name);
                 break;
@@ -64,12 +79,19 @@ export default function TypeCityWorkshopPage() {
       // Match city
       const cityMatch = workshop.city?.trim() === cityIdOrName.trim();
       
-      // Match type
+      // Match type (exact or partial)
       const workshopTypes = workshop.workshopTypes || [];
-      const typeMatch = workshopTypes.some((t: { id?: string; name?: string }) => 
-        t.id?.trim() === typeIdOrName.trim() || 
-        t.name?.toLowerCase().trim() === typeIdOrName.toLowerCase()
-      );
+      const normalizedInput = typeIdOrName.toLowerCase().trim();
+      const typeMatch = workshopTypes.some((t: { id?: string; name?: string }) => {
+        if (!t.name) return false;
+        const typeNameLower = t.name.toLowerCase();
+        // Exact match
+        return t.id?.trim() === typeIdOrName.trim() || 
+               typeNameLower === normalizedInput ||
+               // Partial match
+               typeNameLower.includes(normalizedInput) ||
+               normalizedInput.includes(typeNameLower);
+      });
       
       return cityMatch && typeMatch;
     });
