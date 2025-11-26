@@ -179,13 +179,33 @@ export async function getWorkshopTypeData(idOrName: string): Promise<LocationDat
       const categories = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       
       // Search for type in all categories
+      // Try exact match first, then partial match
+      const normalizedInput = trimmedId.toLowerCase();
+      
       for (const category of categories) {
         if (Array.isArray(category.types)) {
-          const type = category.types.find((t: { id?: string; name?: string }) => 
+          // First try: exact match (ID, name, or slug)
+          let type = category.types.find((t: { id?: string; name?: string }) => 
             t.id?.trim() === trimmedId || 
-            t.name?.toLowerCase().trim() === trimmedId.toLowerCase() ||
-            createSlug(t.name || '').toLowerCase() === trimmedId.toLowerCase()
+            t.name?.toLowerCase().trim() === normalizedInput ||
+            createSlug(t.name || '').toLowerCase() === normalizedInput
           );
+          
+          // Second try: partial match (if exact match not found)
+          // Check if input is contained in type name or slug
+          if (!type) {
+            type = category.types.find((t: { id?: string; name?: string }) => {
+              if (!t.name) return false;
+              const typeNameLower = t.name.toLowerCase();
+              const typeSlug = createSlug(t.name).toLowerCase();
+              
+              // Check if input matches part of type name or slug
+              return typeNameLower.includes(normalizedInput) || 
+                     typeSlug.includes(normalizedInput) ||
+                     normalizedInput.includes(typeNameLower) ||
+                     normalizedInput.includes(typeSlug);
+            });
+          }
           
           if (type) {
             return {
