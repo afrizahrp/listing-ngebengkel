@@ -36,7 +36,12 @@ export const useCityName = (
 
         if (batchRes.ok) {
           const batchData = (await batchRes.json().catch(() => ({}))) as LocationNamesResponse;
-          const cities = Array.isArray(batchData?.data) ? batchData.data : Array.isArray(batchData) ? batchData : [];
+          // Handle both response formats: { data: [...] } or [...]
+          const cities = Array.isArray(batchData) 
+            ? batchData 
+            : 'data' in batchData && Array.isArray(batchData.data)
+              ? batchData.data
+              : [];
           const city = cities.find((c) => c?.id?.trim() === cityId.trim());
           if (city?.name?.trim() && city.name.trim() !== cityId.trim()) {
             return city.name.trim();

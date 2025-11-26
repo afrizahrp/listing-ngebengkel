@@ -55,10 +55,12 @@ export const useWorkshopImages = (
         let images: WorkshopImage[] = [];
         if (Array.isArray(data)) {
           images = data;
-        } else if (data && typeof data === 'object' && 'data' in data && Array.isArray(data.data)) {
-          images = data.data;
-        } else if (data && typeof data === 'object' && Array.isArray(data)) {
-          images = data;
+        } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Check if it's an object with 'data' property
+          const dataObj = data as { data?: WorkshopImage[]; [key: string]: unknown };
+          if ('data' in dataObj && Array.isArray(dataObj.data)) {
+            images = dataObj.data;
+          }
         }
         
         console.log('[useWorkshopImages] Parsed images:', images);

@@ -40,40 +40,6 @@ async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: st
   }
 }
 
-async function getAllWorkshopTypes(): Promise<Array<{ id: string; name: string }>> {
-  try {
-    const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/waiting-list/categories`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const categories = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-      const types: Array<{ id: string; name: string }> = [];
-      
-      for (const category of categories) {
-        if (Array.isArray(category.types)) {
-          for (const type of category.types) {
-            if (type.id && type.name) {
-              types.push({ id: type.id, name: type.name });
-            }
-          }
-        }
-      }
-      
-      return types;
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, '') ||
@@ -115,9 +81,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const subdistrictSlugs = new Set<string>();
       const typeCitySlugs = new Set<string>();
       const typeCityDistrictSlugs = new Set<string>();
-
-      // Get all workshop types
-      const allTypes = await getAllWorkshopTypes();
 
       for (const item of items) {
         // Add workshop detail page

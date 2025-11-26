@@ -142,7 +142,7 @@ export async function GET(
 
   // Handle error responses
   if (!res.ok) {
-    let errorData: any;
+    let errorData: { message?: string; raw?: string; [key: string]: unknown } | null = null;
     let errorText: string = '';
     try {
       errorText = await res.text();
@@ -150,7 +150,7 @@ export async function GET(
       
       if (errorText) {
         try {
-          errorData = JSON.parse(errorText);
+          errorData = JSON.parse(errorText) as { message?: string; raw?: string; [key: string]: unknown };
           console.error(`[sys_province] Backend error (${res.status}):`, JSON.stringify(errorData, null, 2));
         } catch (parseError) {
           console.error(`[sys_province] Failed to parse error JSON:`, parseError);

@@ -15,6 +15,8 @@ Sitemap otomatis include:
 3. ✅ Semua halaman lokasi city (`/bengkel/[city]`)
 4. ✅ Semua halaman lokasi district (`/bengkel/[city]/[district]`)
 5. ✅ Semua halaman lokasi subdistrict (`/bengkel/[city]/[district]/[subdistrict]`)
+6. ✅ Semua halaman type + city (`/cari-bengkel/[type]/[city]`) - **BARU**
+7. ✅ Semua halaman type + city + district (`/cari-bengkel/[type]/[city]/[district]`) - **BARU**
 
 ### Robots.txt
 File `robots.txt` sudah reference ke sitemap:
@@ -59,7 +61,9 @@ File `robots.txt` sudah reference ke sitemap:
 |---------|----------|------------------|
 | Homepage (`/`) | 1.0 | daily |
 | Workshop Detail | 0.7 | weekly |
+| Type + City Pages | 0.7 | weekly |
 | City Pages | 0.6 | weekly |
+| Type + City + District Pages | 0.65 | weekly |
 | District Pages | 0.5 | weekly |
 | Subdistrict Pages | 0.4 | weekly |
 
@@ -133,6 +137,9 @@ https://ngebengkel.com/workshop/ngebengkel-express
 https://ngebengkel.com/bengkel/jakarta
 https://ngebengkel.com/bengkel/jakarta/menteng
 https://ngebengkel.com/bengkel/jakarta/menteng/menteng-selatan
+https://ngebengkel.com/cari-bengkel/spooring/jakarta-timur
+https://ngebengkel.com/cari-bengkel/spooring/jakarta-timur/cakung
+https://ngebengkel.com/cari-bengkel/ac/jakarta-selatan
 ```
 
 ---
@@ -140,9 +147,35 @@ https://ngebengkel.com/bengkel/jakarta/menteng/menteng-selatan
 ## ⚠️ Catatan Penting
 
 1. **Jangan submit sitemap berkali-kali** - Google akan auto-detect update
-2. **Pastikan semua URL di sitemap accessible** - Return 200 OK
-3. **Pastikan robots.txt tidak block** - Check `/robots.txt`
-4. **Monitor di GSC** - Cek coverage report secara berkala
+2. **Tidak perlu submit ulang setelah update** - Google otomatis crawl ulang secara berkala
+3. **Request re-crawl (opsional)** - Bisa request indexing di URL Inspection Tool untuk mempercepat
+4. **Pastikan semua URL di sitemap accessible** - Return 200 OK
+5. **Pastikan robots.txt tidak block** - Check `/robots.txt`
+6. **Monitor di GSC** - Cek coverage report secara berkala
+
+## 🔄 Update Sitemap (Setelah Perubahan)
+
+### Apakah Perlu Submit Ulang?
+**TIDAK PERLU** - Jika sitemap URL sudah terdaftar (`sitemap.xml`), Google akan:
+- ✅ Auto-detect perubahan secara berkala (biasanya setiap 1-3 hari)
+- ✅ Auto-crawl URL baru yang ditambahkan
+- ✅ Update index secara otomatis
+
+### Opsi untuk Mempercepat (Opsional):
+1. **Request Re-crawl via URL Inspection Tool**
+   - Buka: GSC → URL Inspection
+   - Test beberapa URL baru: `/cari-bengkel/spooring/jakarta-timur`
+   - Klik "Request Indexing"
+
+2. **Monitor di Sitemaps Section**
+   - Buka: GSC → Sitemaps
+   - Cek "Last read" date
+   - Google akan otomatis read ulang saat ada update
+
+3. **Submit Ulang (Hanya Jika)**
+   - Sitemap URL berubah (misal: `sitemap.xml` → `sitemap-v2.xml`)
+   - Ada masalah dengan sitemap sebelumnya
+   - **Jika URL tetap sama, TIDAK PERLU submit ulang**
 
 ---
 
