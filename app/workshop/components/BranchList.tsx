@@ -78,8 +78,9 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
         const checklist = Array.isArray(promo?.checklist) ? promo!.checklist! : []
         
         // Check claim status
+        // Button hanya hidden jika status benar-benar CLAIMED (bukan PENDING_VERIFICATION)
         const isAlreadyClaimedFromApi =
-          !!branch.claimStatus && branch.claimStatus !== 'UNCLAIMED'
+          !!branch.claimStatus && branch.claimStatus === 'CLAIMED'
         const isLocallyClaimed =
           !!branchIdStr && locallyClaimedIds.has(branchIdStr)
         const isUnclaimed = !isAlreadyClaimedFromApi && !isLocallyClaimed
@@ -103,20 +104,19 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           // TODO: Show modal/form untuk input phone, name, email
           // Untuk sekarang, gunakan data dari branch
           try {
-            await claimMutation.mutateAsync({
+            const result = await claimMutation.mutateAsync({
               waitingListId: trimmedId,
               phone: branch.phone || '',
               name: branch.name,
             })
-            // Tandai sebagai sudah diklaim di sisi UI
-            setLocallyClaimedIds((prev) => {
-              const next = new Set(prev)
-              next.add(trimmedId)
-              return next
+            // JANGAN langsung hide button - status masih PENDING_VERIFICATION
+            // Button akan hilang setelah verifikasi sukses (status = CLAIMED)
+            toast.success('Kode Verifikasi Dikirim', {
+              description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
             })
-            toast.success('Klaim Berhasil', {
-              description: 'Silakan cek WhatsApp untuk kode verifikasi.',
-            })
+            // Redirect ke halaman verifikasi
+            const slug = createSlug(branch.name)
+            router.push(`/workshop/${slug}/claim/verify?claimRequestId=${result.claimRequestId}`)
           } catch (error: unknown) {
             const description =
               error instanceof Error

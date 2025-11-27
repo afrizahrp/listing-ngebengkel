@@ -11,7 +11,7 @@ type ClaimWorkshopPayload = {
 
 type ClaimWorkshopResponse = {
   message: string;
-  claimToken?: string;
+  claimRequestId: string;
 };
 
 export const useClaimWorkshop = () => {
