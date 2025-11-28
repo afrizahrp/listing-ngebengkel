@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import axios from 'axios';
 import { sysApi, extractErrorMessage } from '@/config/api';
@@ -207,6 +208,120 @@ export const useSubdistrictName = (
       return failureCount < 2;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
+    ...options,
+  });
+};
+
+// Hook untuk fetch multiple district names using batch endpoint dengan React Query caching
+export const useDistrictNamesBatch = (
+  districtIds: string[],
+  options?: Omit<UseQueryOptions<Record<string, string>, Error>, 'queryKey' | 'queryFn'>,
+) => {
+  // Sort and stringify IDs for consistent cache key
+  const sortedIds = useMemo(() => [...districtIds].sort().join(','), [districtIds]);
+  
+  return useQuery<Record<string, string>, Error>({
+    queryKey: ['district-names-batch', sortedIds],
+    enabled: districtIds.length > 0,
+    queryFn: async () => {
+      if (districtIds.length === 0) return {};
+
+      try {
+        const res = await fetch('/api/sys_district/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids: districtIds }),
+          cache: 'no-store',
+        });
+
+        if (!res.ok) {
+          console.warn(`Failed to fetch districts batch: ${res.status}`);
+          return {};
+        }
+
+        const data = (await res.json().catch(() => ({}))) as LocationNamesResponse;
+        const districts = Array.isArray(data) 
+          ? data 
+          : 'data' in data && Array.isArray(data.data)
+            ? data.data
+            : [];
+
+        const districtMap: Record<string, string> = {};
+        for (const district of districts) {
+          const id = district?.id?.trim();
+          const name = district?.name?.trim();
+          if (id && name && name !== id) {
+            districtMap[id] = name;
+          }
+        }
+        return districtMap;
+      } catch (error) {
+        console.warn('Failed to fetch districts batch:', error);
+        return {};
+      }
+    },
+    staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
+    gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
+    retry: false, // Don't retry for batch requests
+    ...options,
+  });
+};
+
+// Hook untuk fetch multiple subdistrict names using batch endpoint dengan React Query caching
+export const useSubdistrictNamesBatch = (
+  subdistrictIds: string[],
+  options?: Omit<UseQueryOptions<Record<string, string>, Error>, 'queryKey' | 'queryFn'>,
+) => {
+  // Sort and stringify IDs for consistent cache key
+  const sortedIds = useMemo(() => [...subdistrictIds].sort().join(','), [subdistrictIds]);
+  
+  return useQuery<Record<string, string>, Error>({
+    queryKey: ['subdistrict-names-batch', sortedIds],
+    enabled: subdistrictIds.length > 0,
+    queryFn: async () => {
+      if (subdistrictIds.length === 0) return {};
+
+      try {
+        const res = await fetch('/api/sys_subdistrict/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids: subdistrictIds }),
+          cache: 'no-store',
+        });
+
+        if (!res.ok) {
+          console.warn(`Failed to fetch subdistricts batch: ${res.status}`);
+          return {};
+        }
+
+        const data = (await res.json().catch(() => ({}))) as LocationNamesResponse;
+        const subdistricts = Array.isArray(data) 
+          ? data 
+          : 'data' in data && Array.isArray(data.data)
+            ? data.data
+            : [];
+
+        const subdistrictMap: Record<string, string> = {};
+        for (const subdistrict of subdistricts) {
+          const id = subdistrict?.id?.trim();
+          const name = subdistrict?.name?.trim();
+          if (id && name && name !== id) {
+            subdistrictMap[id] = name;
+          }
+        }
+        return subdistrictMap;
+      } catch (error) {
+        console.warn('Failed to fetch subdistricts batch:', error);
+        return {};
+      }
+    },
+    staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
+    gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
+    retry: false, // Don't retry for batch requests
     ...options,
   });
 };

@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
 // Removed SlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
-import { createSlug } from '@/lib/utils/slug'
 import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop'
 import { toast } from 'sonner'
 
@@ -67,8 +66,13 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           : ''
         const handleOpenDetail = () => {
           onBranchClick?.(branch)
-          // Gunakan slug dari kolom slug (jika tersedia), fallback ke createSlug dari nama
-          const slug = branch.slug || createSlug(branch.name)
+          // Gunakan slug dari database (sudah pasti terisi di wks_waitingList)
+          // Fallback ke ID jika slug tidak tersedia (seharusnya tidak terjadi)
+          const slug = branch.slug || branch.id
+          if (!slug) {
+            console.warn('No slug or ID available for branch:', branch.name)
+            return
+          }
           router.push(`/workshop/${slug}`)
         }
         // Cek apakah promo untuk branch ini sudah expanded
@@ -166,7 +170,7 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                     "shadow-md"
                   )}
                 >
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  {/* <Sparkles className="h-3.5 w-3.5 mr-1.5" /> */}
                   Promo
                 </Badge>
               </div>

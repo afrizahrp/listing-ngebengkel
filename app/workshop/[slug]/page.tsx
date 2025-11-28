@@ -26,7 +26,7 @@ export default function WorkshopDetailPage() {
   // Fetch images dan videos untuk workshop ini
   // Trim ID untuk menghilangkan spasi yang tidak perlu
   const waitingListId = data?.id?.trim();
-  const { data: images = [], isLoading: isLoadingImages, isError: isErrorImages } = useWorkshopImages(
+  const { data: images = [] } = useWorkshopImages(
     waitingListId,
     null,
     { enabled: Boolean(waitingListId) },
@@ -43,16 +43,6 @@ export default function WorkshopDetailPage() {
   const { data: districtName } = useDistrictName(data?.district, { enabled: Boolean(data?.district) });
   const { data: subdistrictName } = useSubdistrictName(data?.subdistrict, { enabled: Boolean(data?.subdistrict) });
 
-  // Debug logging
-  useEffect(() => {
-    if (waitingListId) {
-      console.log('[WorkshopDetail] WaitingList ID (trimmed):', waitingListId);
-      console.log('[WorkshopDetail] WaitingList ID (original):', data?.id);
-      console.log('[WorkshopDetail] Images data:', images);
-      console.log('[WorkshopDetail] Images loading:', isLoadingImages);
-      console.log('[WorkshopDetail] Images error:', isErrorImages);
-    }
-  }, [waitingListId, data?.id, images, isLoadingImages, isErrorImages]);
 
   // Generate gallery images dari API atau fallback ke placeholder workshop/bengkel
   const galleryImages = useMemo(() => {
@@ -67,11 +57,9 @@ export default function WorkshopDetailPage() {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
       const urls = sorted.map((img) => img.imageURL);
-      console.log('[WorkshopDetail] Gallery images URLs:', urls);
       return urls;
     }
     // Fallback ke placeholder workshop/bengkel jika belum ada image di wks_Images
-    console.log('[WorkshopDetail] No images found, using workshop/bengkel placeholder');
     return ['/images/workshop-placeholder-3.webp']; // Placeholder identik dengan workshop/bengkel
   }, [images]);
 
@@ -227,12 +215,6 @@ export default function WorkshopDetailPage() {
                     priority
                     onClick={() => setIsLightboxOpen(true)}
                     unoptimized={true}
-                    onError={(e) => {
-                      console.error('[WorkshopDetail] Image load error:', galleryImages[currentImageIndex], e);
-                    }}
-                    onLoad={() => {
-                      console.log('[WorkshopDetail] Image loaded:', galleryImages[currentImageIndex]);
-                    }}
                   />
                 
                 {/* Navigation Buttons */}
@@ -291,9 +273,6 @@ export default function WorkshopDetailPage() {
                           fill
                           className="object-cover"
                           unoptimized={true}
-                          onError={(e) => {
-                            console.error('[WorkshopDetail] Thumbnail load error:', img, e);
-                          }}
                         />
                       </button>
                     ))}

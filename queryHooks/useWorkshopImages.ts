@@ -47,10 +47,7 @@ export const useWorkshopImages = (
         const queryString = params.toString();
         const url = `${SYS_ENDPOINTS.images.base}${queryString ? `?${queryString}` : ''}`;
 
-        console.log('[useWorkshopImages] Fetching from:', url);
-        console.log('[useWorkshopImages] WaitingListId (trimmed):', trimmedWaitingListId);
         const { data } = await sysApi.get<WorkshopImage[]>(url);
-        console.log('[useWorkshopImages] Raw response:', data);
         
         // Handle different response formats
         let images: WorkshopImage[] = [];
@@ -64,15 +61,11 @@ export const useWorkshopImages = (
           }
         }
         
-        console.log('[useWorkshopImages] Parsed images:', images);
-        
         // Filter hanya yang aktif (safety check, backend sudah filter)
         const activeImages = images.filter((img) => img.isActive !== false);
-        console.log('[useWorkshopImages] Active images:', activeImages);
         
         return activeImages;
       } catch (error) {
-        console.error('[useWorkshopImages] Error:', error);
         // Handle 404 dan 429 errors dengan lebih baik
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;

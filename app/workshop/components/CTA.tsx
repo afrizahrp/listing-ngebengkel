@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 import { BranchList } from './BranchList';
 import { SearchBar } from './SearchBar';
@@ -11,12 +12,21 @@ import type { BookingBranch } from '@/types/booking';
 import { useWaitingListsPaginated } from '@/queryHooks/useWaitingList';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/ui/pagination';
+import { useDistrictNamesBatch, useSubdistrictNamesBatch } from '@/queryHooks/useLocationNames';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type CTAVariant = 'section' | 'dialog';
 
 interface WaitingListListItem {
   id: string;
   name: string;
+  slug?: string | null; // Slug dari database (sudah pasti terisi di wks_waitingList)
   address?: string | null;
   phone?: string | null;
   mobile?: string | null;
@@ -27,6 +37,7 @@ interface WaitingListListItem {
   cityName?: string | null; // Check if backend already returns cityName
   province?: string | null;
   district?: string | null;
+  subdistrict?: string | null;
   workshopTypes?: Array<{ id: string; name: string | null }>;
   promoPreview?: {
     id: string;
@@ -34,18 +45,23 @@ interface WaitingListListItem {
     promoType: string;
     checklist?: string[] | null;
   } | null;
+  isPromoLinked?: boolean;
 }
 
 interface ExtendedBranch extends BookingBranch {
   typeName?: string | null;
   promoPreview?: WaitingListListItem['promoPreview'];
   claimStatus?: string | null;
+  isPromoLinked?: boolean;
 }
+
+type SortOption = 'name-asc' | 'name-desc';
 
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortOption, setSortOption] = useState<SortOption>('name-asc');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
   // Check if search term is only "promo" keyword
@@ -54,14 +70,24 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const hasPromoKeyword = /\bpromo\b/.test(normalizedSearch);
   const searchWithoutPromo = normalizedSearch.replace(/\bpromo\b/g, '').trim();
   
-  // If search term is only "promo", don't send searchTerm to backend (backend doesn't support promo filtering)
-  // Otherwise, send the search term (without "promo" keyword) to backend
-  const backendSearchTerm = isOnlyPromoKeyword ? undefined : (searchWithoutPromo || undefined);
-  const searchBy = backendSearchTerm ? 'name' : undefined;
+  // Only fetch location names when user is searching (lazy loading to avoid rate limiting)
+  const hasSearchTerm = searchWithoutPromo.length > 0;
+  
+  // If search term is provided, we'll do filtering in frontend (including location-based search)
+  // So we don't send searchTerm to backend to allow location filtering
+  // Only send to backend if we want to filter by name only (for performance with large datasets)
+  // For now, we'll do all filtering in frontend to support location search
+  const backendSearchTerm = undefined; // Don't send to backend, filter in frontend instead
+  const searchBy = undefined;
+  
+  // Use larger limit when searching to get more data for frontend filtering
+  // When no search term, use normal pagination from backend
+  const effectiveLimit = hasSearchTerm ? Math.max(pageSize, 100) : pageSize;
+  const effectivePage = hasSearchTerm ? 1 : page; // Always fetch from page 1 when searching, we'll paginate in frontend
   
   const { data: paginatedData, isLoading, isError, error, refetch } = useWaitingListsPaginated({
-    page,
-    limit: pageSize,
+    page: effectivePage,
+    limit: effectiveLimit,
     searchTerm: backendSearchTerm,
     searchBy,
   });
@@ -146,6 +172,43 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     void fetchAll();
   }, [waitingLists]);
 
+  // Get unique district and subdistrict IDs (only when searching)
+  const { uniqueDistrictIds, uniqueSubdistrictIds } = useMemo(() => {
+    if (!hasSearchTerm || !waitingLists || waitingLists.length === 0) {
+      return { uniqueDistrictIds: [], uniqueSubdistrictIds: [] };
+    }
+
+    const districtSet = new Set<string>();
+    const subdistrictSet = new Set<string>();
+    
+    for (const item of waitingLists) {
+      if (item.district?.trim()) {
+        districtSet.add(item.district.trim());
+      }
+      if (item.subdistrict?.trim()) {
+        subdistrictSet.add(item.subdistrict.trim());
+      }
+    }
+
+    return {
+      uniqueDistrictIds: Array.from(districtSet),
+      uniqueSubdistrictIds: Array.from(subdistrictSet),
+    };
+  }, [waitingLists, hasSearchTerm]);
+
+  // Fetch district and subdistrict names using React Query batch hooks with caching
+  const { data: districtNameMap = {}, isLoading: isDistrictLoading } = useDistrictNamesBatch(
+    uniqueDistrictIds,
+    { enabled: hasSearchTerm && uniqueDistrictIds.length > 0 }
+  );
+
+  const { data: subdistrictNameMap = {}, isLoading: isSubdistrictLoading } = useSubdistrictNamesBatch(
+    uniqueSubdistrictIds,
+    { enabled: hasSearchTerm && uniqueSubdistrictIds.length > 0 }
+  );
+
+  const isLocationQueriesLoading = isDistrictLoading || isSubdistrictLoading;
+
   const branches: ExtendedBranch[] = useMemo(() => {
     if (!waitingLists) return [];
     const items = waitingLists as WaitingListListItem[];
@@ -158,12 +221,19 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
       // Get city name: first check if backend already returns cityName (like categoryName)
       // Otherwise try to get from map, or fallback to null
       const cityName = item.cityName || (item.city?.trim() ? (cityNameMap[item.city.trim()] ?? null) : null);
+      
+      // Get district name from map
+      const districtName = item.district?.trim() ? (districtNameMap[item.district.trim()] ?? null) : null;
+      
+      // Get subdistrict name from map
+      const subdistrictName = item.subdistrict?.trim() ? (subdistrictNameMap[item.subdistrict.trim()] ?? null) : null;
 
       const b: ExtendedBranch = {
         id: item.id,
         name: item.name,
+        slug: item.slug ?? null, // Slug dari database (sudah pasti terisi)
         city: cityName || null, // Explicitly set to null if no city name
-        district: null,
+        district: districtName || null,
         address: item.address ?? null,
         phone: item.phone ?? item.mobile ?? null,
         logo: item.logo ?? null,
@@ -173,17 +243,36 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
         promoPreview: item.promoPreview ?? null,
         // Pastikan interface WaitingListListItem di-update jika backend sudah mengirim claimStatus
         claimStatus: (item as WaitingListListItem & { claimStatus?: string | null }).claimStatus ?? null,
-      };
+        // Store location names for filtering
+        subdistrict: subdistrictName || null,
+        // Include isPromoLinked dari backend (penting untuk sorting)
+        isPromoLinked: item.isPromoLinked ?? false,
+      } as ExtendedBranch & { subdistrict?: string | null };
       return b;
     });
-  }, [waitingLists, cityNameMap]);
+  }, [waitingLists, cityNameMap, districtNameMap, subdistrictNameMap]);
 
-  // Filtering is now done in backend, but we still need to handle "promo" keyword filtering
-  // since backend searchBy doesn't support promo filtering
+  // Filtering: handle location-based search (city, district, subdistrict) and promo keyword
   const filteredBranches: ExtendedBranch[] = useMemo(() => {
+    let filtered = branches;
+    
+    // Apply search filtering (name, city, district, subdistrict)
+    const searchLower = searchWithoutPromo.toLowerCase().trim();
+    if (searchLower.length > 0 && !isOnlyPromoKeyword) {
+      filtered = branches.filter((b) => {
+        // Check if search term matches name, city, district, or subdistrict
+        const nameMatch = b.name?.toLowerCase().includes(searchLower) ?? false;
+        const cityMatch = b.city?.toLowerCase().includes(searchLower) ?? false;
+        const districtMatch = b.district?.toLowerCase().includes(searchLower) ?? false;
+        const subdistrictMatch = (b as ExtendedBranch & { subdistrict?: string | null }).subdistrict?.toLowerCase().includes(searchLower) ?? false;
+        
+        return nameMatch || cityMatch || districtMatch || subdistrictMatch;
+      });
+    }
+    
     // If search term contains "promo", filter by promo in frontend
     if (hasPromoKeyword) {
-      return branches.filter((b) => {
+      filtered = filtered.filter((b) => {
         const p = b.promoPreview;
         const hasPromo = Boolean(p);
         
@@ -193,14 +282,54 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
         }
         
         // If "promo" + other text, show items with promo that also match the other text
-        // Backend already filtered by searchWithoutPromo, so we just need to filter by promo
         return hasPromo;
       });
     }
     
-    // Backend already filtered by searchTerm, so just return branches as-is
-    return branches;
-  }, [branches, hasPromoKeyword, isOnlyPromoKeyword]);
+    // Apply sorting
+    // PENTING: Item dengan isPromoLinked = true TIDAK BISA DI-SORT (selalu di atas)
+    const sorted = [...filtered];
+    
+    // Pisahkan item dengan isPromoLinked = true (tidak bisa di-sort) dan yang bisa di-sort
+    const promoLinked = sorted.filter((b) => b.isPromoLinked === true);
+    const sortable = sorted.filter((b) => b.isPromoLinked !== true);
+    
+    // Sort promo linked items alphabetically (tetap di atas)
+    promoLinked.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+    
+    // Sort sortable items sesuai option yang dipilih
+    if (sortOption === 'name-asc') {
+      sortable.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+    } else if (sortOption === 'name-desc') {
+      sortable.sort((a, b) => b.name.localeCompare(a.name, 'id', { sensitivity: 'base' }));
+    } else {
+      // Default: sort alphabetically ascending
+      sortable.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+    }
+    
+    // Gabungkan: promo linked di atas (tidak bisa di-sort), sortable di bawah
+    return [...promoLinked, ...sortable];
+  }, [branches, hasPromoKeyword, isOnlyPromoKeyword, searchWithoutPromo, sortOption]);
+  
+  // Paginate filtered results in frontend (only when searching)
+  // When not searching, use backend pagination
+  const paginatedFilteredBranches = useMemo(() => {
+    if (hasSearchTerm) {
+      // Frontend pagination when searching
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      return filteredBranches.slice(startIndex, endIndex);
+    } else {
+      // Use backend pagination when not searching
+      return filteredBranches;
+    }
+  }, [filteredBranches, page, pageSize, hasSearchTerm]);
+  
+  // Calculate total pages based on filtered results (when searching) or backend total (when not searching)
+  const totalFilteredRecords = hasSearchTerm ? filteredBranches.length : totalRecords;
+  const totalPages = hasSearchTerm 
+    ? Math.ceil(filteredBranches.length / pageSize)
+    : Math.ceil(totalRecords / pageSize);
 
   // Reset to page 1 when search term changes
   useEffect(() => {
@@ -209,13 +338,16 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     }
   }, [debouncedSearchTerm]);
 
+  // Reset to page 1 when sort option changes
+  useEffect(() => {
+    setPage(1);
+  }, [sortOption]);
+
   // Reset to page 1 when page size changes
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setPage(1);
   };
-
-  const totalPages = Math.ceil(totalRecords / pageSize);
 
   return (
     <section className={variant === 'section' ? 'w-full bg-white py-12 text-[#2f2f2f]' : 'w-full rounded-3xl bg-background text-[#2f2f2f]'}>
@@ -231,7 +363,7 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
             <div className="flex-1 space-y-2 text-left">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Promo &amp; Bengkel</p>
               <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Temukan Bengkel Promo di Sekitar Anda</h1>
-              <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, jenis layanan, atau kata kunci seperti &quot;promo&quot;.</p>
+              <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, kota, kecamatan, kelurahan, atau kata kunci seperti &quot;promo&quot;.</p>
             </div>
             <div className="flex-shrink-0 sm:pt-8">
               <Link
@@ -250,6 +382,59 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
           <SearchBar value={searchTerm} onChange={setSearchTerm} />
         </div>
 
+        {/* Sort Control */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-sm text-muted-foreground">
+            {totalFilteredRecords > 0 ? (
+              <span>
+                Menampilkan <span className="font-semibold text-foreground">{paginatedFilteredBranches.length}</span> dari{' '}
+                <span className="font-semibold text-foreground">{totalFilteredRecords}</span> bengkel
+              </span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="sort-select" className="text-sm text-muted-foreground whitespace-nowrap">
+              Urutkan:
+            </label>
+            <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+              <SelectTrigger
+                id="sort-select"
+                className="w-[200px] h-9 text-sm"
+                icon={<ArrowUpDown className="h-4 w-4" />}
+              >
+                <SelectValue>
+                  {sortOption === 'name-asc' && (
+                    <div className="flex items-center gap-2">
+                      <ArrowUp className="h-4 w-4" />
+                      <span>Nama A-Z</span>
+                    </div>
+                  )}
+                  {sortOption === 'name-desc' && (
+                    <div className="flex items-center gap-2">
+                      <ArrowDown className="h-4 w-4" />
+                      <span>Nama Z-A</span>
+                    </div>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">
+                  <div className="flex items-center gap-2">
+                    <ArrowUp className="h-4 w-4" />
+                    <span>Nama A-Z</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="name-desc">
+                  <div className="flex items-center gap-2">
+                    <ArrowDown className="h-4 w-4" />
+                    <span>Nama Z-A</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="space-y-4">
           {isLoading ? (
             <LoadingDots text="Memuat daftar bengkel" />
@@ -266,13 +451,16 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
             />
           ) : (
             <>
-              <BranchList branches={filteredBranches} />
-              {totalRecords > 0 && (
+              {isLocationQueriesLoading && hasSearchTerm ? (
+                <LoadingDots text="Memuat informasi lokasi..." />
+              ) : null}
+              <BranchList branches={paginatedFilteredBranches} />
+              {totalFilteredRecords > 0 && (
                 <div className="border-t border-gray-200 bg-white rounded-lg">
                   <Pagination
                     currentPage={page}
                     totalPages={totalPages}
-                    totalRecords={totalRecords}
+                    totalRecords={totalFilteredRecords}
                     pageSize={pageSize}
                     onPageChange={setPage}
                     onPageSizeChange={handlePageSizeChange}
