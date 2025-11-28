@@ -362,8 +362,8 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1 space-y-2 text-left">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Promo &amp; Bengkel</p>
-              <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Temukan Bengkel Promo di Sekitar Anda</h1>
-              <p className="max-w-3xl text-base text-muted-foreground sm:text-lg">Ketik nama bengkel, kota, kecamatan, kelurahan, atau kata kunci seperti &quot;promo&quot;.</p>
+              <h2 className="text-xl font-semibold text-foreground sm:text-2xl">Temukan Bengkel Promo di Sekitar Anda</h2>
+              <p className="max-w-md text-base text-muted-foreground sm:text-sm sm:whitespace-nowrap">Ketik nama bengkel, kota, kecamatan, kelurahan, atau kata kunci seperti &quot;promo&quot;.</p>
             </div>
             <div className="flex-shrink-0 sm:pt-8">
               <Link
