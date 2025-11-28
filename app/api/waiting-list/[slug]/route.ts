@@ -73,13 +73,13 @@ async function getServiceToken(): Promise<string> {
 
 export async function GET(
   _request: Request,
-  context: { params: { id: string } },
+  context: { params: { slug: string } },
 ) {
   const base =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     'http://127.0.0.1:4000';
-  const slugOrId = context.params.id;
+  const slugOrId = context.params.slug;
 
   let token: string;
   try {
@@ -143,11 +143,22 @@ export async function GET(
         const allData = await allRes.json().catch(() => ({}));
         const items = Array.isArray(allData) ? allData : (allData?.data || []);
         
-        // Cari item yang slug-nya match
-        const foundItem = items.find((item: { name?: string; id?: string }) => {
-          if (!item.name) return false;
-          const itemSlug = createSlug(item.name);
-          return itemSlug === slugOrId || item.id === slugOrId;
+        // Cari item yang slug-nya match (gunakan kolom slug dari database, bukan createSlug dari name)
+        const foundItem = items.find((item: { slug?: string | null; name?: string; id?: string }) => {
+          // Prioritas: gunakan kolom slug dari database jika tersedia
+          if (item.slug && item.slug.toLowerCase() === slugOrId.toLowerCase()) {
+            return true;
+          }
+          // Fallback: cek ID
+          if (item.id === slugOrId) {
+            return true;
+          }
+          // Fallback terakhir: generate slug dari name (untuk backward compatibility)
+          if (item.name) {
+            const itemSlug = createSlug(item.name);
+            return itemSlug === slugOrId;
+          }
+          return false;
         });
 
         if (foundItem) {

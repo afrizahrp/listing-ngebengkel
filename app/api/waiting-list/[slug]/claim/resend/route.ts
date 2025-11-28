@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: { slug: string } },
 ) {
   const base =
     process.env.BACKEND_URL ||
@@ -14,8 +14,8 @@ export async function POST(
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
   
-  const waitingListId = params?.id?.trim() || '';
-  const target = `${apiBase}/waiting-list/${encodeURIComponent(waitingListId)}/claim/verify`;
+  const waitingListId = params?.slug?.trim() || '';
+  const target = `${apiBase}/waiting-list/${encodeURIComponent(waitingListId)}/claim/resend`;
 
   try {
     const body = await request.json();
@@ -50,10 +50,10 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('[WaitingListClaimVerify] Error proxying POST request:', error);
+    console.error('[WaitingListClaimResend] Error proxying POST request:', error);
     return NextResponse.json(
       { 
-        message: 'Gagal memverifikasi kode OTP',
+        message: 'Gagal mengirim ulang kode OTP',
         error: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 },

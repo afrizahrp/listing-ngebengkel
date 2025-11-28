@@ -15,9 +15,9 @@ import { WorkshopMap } from '../components/WorkshopMap';
 import { ListingDisclaimer } from '../components/ListingDisclaimer';
 
 export default function WorkshopDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ slug: string }>();
   const router = useRouter();
-  const slugOrId = params?.id ?? '';
+  const slugOrId = params?.slug ?? '';
 
   // Slug bisa berupa ID atau nama yang sudah di-slug
   // useWaitingList akan handle pencarian berdasarkan slug
@@ -72,7 +72,7 @@ export default function WorkshopDetailPage() {
     }
     // Fallback ke placeholder workshop/bengkel jika belum ada image di wks_Images
     console.log('[WorkshopDetail] No images found, using workshop/bengkel placeholder');
-    return ['/images/workshop-placeholder-2.webp']; // Placeholder identik dengan workshop/bengkel
+    return ['/images/workshop-placeholder-3.webp']; // Placeholder identik dengan workshop/bengkel
   }, [images]);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);

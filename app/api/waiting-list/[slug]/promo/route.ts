@@ -5,13 +5,13 @@ export const runtime = 'nodejs';
 
 export async function GET(
   _request: Request,
-  context: { params: { id: string } },
+  context: { params: { slug: string } },
 ) {
   const base =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     'http://127.0.0.1:4000';
-  const id = context.params.id;
+  const id = context.params.slug;
 
   let token: string;
   try {

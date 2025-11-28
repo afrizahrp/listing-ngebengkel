@@ -8,6 +8,7 @@ export type BookingSlot = {
 export type BookingBranch = {
   id: string;
   name: string;
+  slug?: string | null;
   city?: string | null;
   district?: string | null;
   address?: string | null;

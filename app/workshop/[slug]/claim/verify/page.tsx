@@ -13,10 +13,10 @@ import { ArrowLeft, ShieldCheck, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ClaimVerifyPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ slug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const slugOrId = params?.id ?? '';
+  const slugOrId = params?.slug ?? '';
   const claimRequestId = searchParams.get('claimRequestId') || '';
 
   const [otp, setOtp] = useState('');

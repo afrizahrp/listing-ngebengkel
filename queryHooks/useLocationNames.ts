@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import axios from 'axios';
 import { sysApi, extractErrorMessage } from '@/config/api';
 
 type LocationName = {
@@ -56,14 +57,27 @@ export const useCityName = (
         }
         return null;
       } catch (error) {
+        // Handle 429 (rate limiting) dengan lebih baik
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.warn(`Rate limited when fetching city name for ${cityId}`);
+          // Return null untuk 429, jangan throw error
+          return null;
+        }
         console.warn(`Failed to fetch city name for ${cityId}:`, error);
         return null;
       }
     },
     staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
     gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
-    retry: 2,
-    retryDelay: 1000,
+    retry: (failureCount, error) => {
+      // Jangan retry untuk 429 atau 404
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 404 || status === 429) return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
     ...options,
   });
 };
@@ -87,14 +101,26 @@ export const useProvinceName = (
         }
         return null;
       } catch (error) {
+        // Handle 429 (rate limiting) dengan lebih baik
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.warn(`Rate limited when fetching province name for ${provinceId}`);
+          return null;
+        }
         console.warn(`Failed to fetch province name for ${provinceId}:`, error);
         return null;
       }
     },
     staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
     gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
-    retry: 2,
-    retryDelay: 1000,
+    retry: (failureCount, error) => {
+      // Jangan retry untuk 429 atau 404
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 404 || status === 429) return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
     ...options,
   });
 };
@@ -118,14 +144,26 @@ export const useDistrictName = (
         }
         return null;
       } catch (error) {
+        // Handle 429 (rate limiting) dengan lebih baik
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.warn(`Rate limited when fetching district name for ${districtId}`);
+          return null;
+        }
         console.warn(`Failed to fetch district name for ${districtId}:`, error);
         return null;
       }
     },
     staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
     gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
-    retry: 2,
-    retryDelay: 1000,
+    retry: (failureCount, error) => {
+      // Jangan retry untuk 429 atau 404
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 404 || status === 429) return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
     ...options,
   });
 };
@@ -149,14 +187,26 @@ export const useSubdistrictName = (
         }
         return null;
       } catch (error) {
+        // Handle 429 (rate limiting) dengan lebih baik
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          console.warn(`Rate limited when fetching subdistrict name for ${subdistrictId}`);
+          return null;
+        }
         console.warn(`Failed to fetch subdistrict name for ${subdistrictId}:`, error);
         return null;
       }
     },
     staleTime: 1000 * 60 * 60, // Cache untuk 1 jam
     gcTime: 1000 * 60 * 60 * 24, // Keep in cache untuk 24 jam
-    retry: 2,
-    retryDelay: 1000,
+    retry: (failureCount, error) => {
+      // Jangan retry untuk 429 atau 404
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 404 || status === 429) return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
     ...options,
   });
 };

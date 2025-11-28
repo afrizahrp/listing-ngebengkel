@@ -67,8 +67,8 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           : ''
         const handleOpenDetail = () => {
           onBranchClick?.(branch)
-          // Gunakan slug dari nama untuk URL yang lebih SEO-friendly
-          const slug = createSlug(branch.name)
+          // Gunakan slug dari kolom slug (jika tersedia), fallback ke createSlug dari nama
+          const slug = branch.slug || createSlug(branch.name)
           router.push(`/workshop/${slug}`)
         }
         // Cek apakah promo untuk branch ini sudah expanded
@@ -115,8 +115,13 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
               description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
             })
             // Redirect ke halaman verifikasi
-            const slug = createSlug(branch.name)
-            router.push(`/workshop/${slug}/claim/verify?claimRequestId=${result.claimRequestId}`)
+            if (!branch.slug) {
+              toast.error('Slug tidak tersedia', {
+                description: 'Tidak dapat redirect ke halaman verifikasi.',
+              })
+              return
+            }
+            router.push(`/workshop/${branch.slug}/claim/verify?claimRequestId=${result.claimRequestId}`)
           } catch (error: unknown) {
             const description =
               error instanceof Error

@@ -34,10 +34,22 @@ async function getWorkshopData(slugOrId: string) {
         const allData = await allRes.json().catch(() => ({}));
         const items = Array.isArray(allData) ? allData : (allData?.data || []);
         
-        const foundItem = items.find((item: { name?: string; id?: string; slug?: string }) => {
-          if (!item.name) return false;
-          const itemSlug = item.slug || createSlug(item.name);
-          return itemSlug === slugOrId || item.id === slugOrId;
+        // Cari item yang slug-nya match (gunakan kolom slug dari database, bukan createSlug dari name)
+        const foundItem = items.find((item: { slug?: string | null; name?: string; id?: string }) => {
+          // Prioritas: gunakan kolom slug dari database jika tersedia
+          if (item.slug && item.slug.toLowerCase() === slugOrId.toLowerCase()) {
+            return true;
+          }
+          // Fallback: cek ID
+          if (item.id === slugOrId) {
+            return true;
+          }
+          // Fallback terakhir: generate slug dari name (untuk backward compatibility)
+          if (item.name) {
+            const itemSlug = createSlug(item.name);
+            return itemSlug === slugOrId;
+          }
+          return false;
         });
 
         if (foundItem) {
@@ -84,9 +96,9 @@ async function getPromos(waitingListId: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: { slug: string };
 }): Promise<Metadata> {
-  const slugOrId = params?.id ?? '';
+  const slugOrId = params?.slug ?? '';
   const workshop = await getWorkshopData(slugOrId);
 
   if (!workshop) {
@@ -259,9 +271,12 @@ export default async function WorkshopLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { id: string };
+  params: { slug: string };
 }) {
-  const slugOrId = params?.id ?? '';
+  const slugOrId = params?.slug ?? '';
+  
+  // Note: Redirect 301 dari ID ke slug sudah di-handle oleh middleware.ts
+  // Middleware akan redirect sebelum layout ini dijalankan
   
   return (
     <>
