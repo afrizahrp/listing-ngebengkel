@@ -59,7 +59,7 @@ type SortOption = 'name-asc' | 'name-desc';
 
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(12);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortOption, setSortOption] = useState<SortOption>('name-asc');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -287,28 +287,46 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     }
     
     // Apply sorting
-    // PENTING: Item dengan isPromoLinked = true TIDAK BISA DI-SORT (selalu di atas)
+    // PENTING: Item dengan isPromoLinked = true SELALU di atas dan di-sort alfabetis (A-Z)
+    // Konsisten dengan backend: gunakan localeCompare langsung tanpa toLowerCase
     const sorted = [...filtered];
     
-    // Pisahkan item dengan isPromoLinked = true (tidak bisa di-sort) dan yang bisa di-sort
+    // Pisahkan item dengan isPromoLinked = true (promo) dan yang tidak (regular)
     const promoLinked = sorted.filter((b) => b.isPromoLinked === true);
-    const sortable = sorted.filter((b) => b.isPromoLinked !== true);
+    const regular = sorted.filter((b) => b.isPromoLinked !== true);
     
-    // Sort promo linked items alphabetically (tetap di atas)
-    promoLinked.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+    // Sort promo linked items alphabetically (A-Z) - SELALU di atas
+    // Konsisten dengan backend: gunakan localeCompare langsung (tanpa toLowerCase)
+    promoLinked.sort((a, b) => {
+      const nameA = (a.name || '').trim();
+      const nameB = (b.name || '').trim();
+      return nameA.localeCompare(nameB, 'id', { sensitivity: 'base', numeric: true });
+    });
     
-    // Sort sortable items sesuai option yang dipilih
+    // Sort regular items sesuai option yang dipilih
     if (sortOption === 'name-asc') {
-      sortable.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+      regular.sort((a, b) => {
+        const nameA = (a.name || '').trim();
+        const nameB = (b.name || '').trim();
+        return nameA.localeCompare(nameB, 'id', { sensitivity: 'base', numeric: true });
+      });
     } else if (sortOption === 'name-desc') {
-      sortable.sort((a, b) => b.name.localeCompare(a.name, 'id', { sensitivity: 'base' }));
+      regular.sort((a, b) => {
+        const nameA = (a.name || '').trim();
+        const nameB = (b.name || '').trim();
+        return nameB.localeCompare(nameA, 'id', { sensitivity: 'base', numeric: true });
+      });
     } else {
       // Default: sort alphabetically ascending
-      sortable.sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+      regular.sort((a, b) => {
+        const nameA = (a.name || '').trim();
+        const nameB = (b.name || '').trim();
+        return nameA.localeCompare(nameB, 'id', { sensitivity: 'base', numeric: true });
+      });
     }
     
-    // Gabungkan: promo linked di atas (tidak bisa di-sort), sortable di bawah
-    return [...promoLinked, ...sortable];
+    // Gabungkan: promo linked di atas (selalu A-Z), regular di bawah (sesuai sort option)
+    return [...promoLinked, ...regular];
   }, [branches, hasPromoKeyword, isOnlyPromoKeyword, searchWithoutPromo, sortOption]);
   
   // Paginate filtered results in frontend (only when searching)
@@ -464,7 +482,7 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
                     pageSize={pageSize}
                     onPageChange={setPage}
                     onPageSizeChange={handlePageSizeChange}
-                    pageSizeOptions={[10, 20, 30]}
+                    pageSizeOptions={[12, 24, 36]}
                   />
                 </div>
               )}

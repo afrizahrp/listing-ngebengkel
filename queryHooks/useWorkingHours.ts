@@ -71,23 +71,29 @@ export const useWorkingHours = (options?: WorkingHoursQueryOptions) => {
         );
       }
     },
-    staleTime: 1000 * 60 * 5, // Cache untuk 5 menit
-    gcTime: 1000 * 60 * 30, // Keep in cache untuk 30 menit
+    staleTime: 1000 * 60 * 10, // Cache untuk 10 menit (lebih lama untuk mengurangi request)
+    gcTime: 1000 * 60 * 60, // Keep in cache untuk 1 jam
+    refetchOnMount: false, // Jangan refetch saat mount jika data masih fresh
+    refetchOnWindowFocus: false, // Jangan refetch saat window focus
+    refetchOnReconnect: false, // Jangan refetch saat reconnect
+    placeholderData: (previousData) => previousData, // Gunakan data sebelumnya saat loading
     retry: (failureCount, error) => {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         if (status === 404) return false;
         if (status === 429) {
-          return failureCount < 2;
+          // Jangan retry untuk 429, karena akan membuat masalah lebih buruk
+          return false;
         }
       }
-      return failureCount < 2;
+      return failureCount < 1; // Kurangi retry untuk menghindari terlalu banyak request
     },
     retryDelay: (attemptIndex, error) => {
       if (axios.isAxiosError(error) && error.response?.status === 429) {
-        return Math.min(1000 * Math.pow(2, attemptIndex) + Math.random() * 1000, 10000);
+        // Jangan retry untuk 429
+        return 0;
       }
-      return Math.min(1000 * Math.pow(2, attemptIndex), 5000);
+      return Math.min(1000 * Math.pow(2, attemptIndex), 3000);
     },
     ...restOptions,
   });

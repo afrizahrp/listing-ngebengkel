@@ -11,6 +11,7 @@ import type { BookingBranch } from '@/types/booking'
 import { useRouter } from 'next/navigation'
 import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop'
 import { toast } from 'sonner'
+import { WorkingHourStatus } from './WorkingHourStatus'
 
 
 type PromoPreview = {
@@ -213,6 +214,14 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                     {branch.city || 'Kota tidak tersedia'}
                   </p>
                 </div>
+                
+                {/* Status Jam Operasional */}
+                {branch.id && (
+                  <WorkingHourStatus
+                    waitingListId={branch.id.trim()}
+                    className="mt-1"
+                  />
+                )}
               </div>
 
               {/* Action Area Container - Container Terpisah untuk WhatsApp & Promo */}

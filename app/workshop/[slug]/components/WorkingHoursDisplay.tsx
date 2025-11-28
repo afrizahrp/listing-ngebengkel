@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { useWorkingHours, type WorkingHour } from '@/queryHooks/useWorkingHours';
+import { useWorkingHours } from '@/queryHooks/useWorkingHours';
 
 const WEEKDAY_NAMES = [
   'Minggu',
@@ -90,8 +90,24 @@ export function WorkingHoursDisplay({ waitingListId }: WorkingHoursDisplayProps)
     );
   }
 
-  if (isError || sortedWorkingHours.length === 0) {
-    return null; // Jangan tampilkan jika error atau tidak ada data
+  if (isError) {
+    return null; // Jangan tampilkan jika error
+  }
+
+  if (sortedWorkingHours.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Jam Operasional
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Jam kerja belum tersedia</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

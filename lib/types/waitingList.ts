@@ -17,6 +17,7 @@ export interface WaitingListItem {
   description?: string | null;
   workshopTypes: WorkshopType[];
   hasPromo?: boolean;
+  isPromoLinked?: boolean; // true jika memiliki promo di wks_promo dengan waitingList_id
   promoPreview?: {
     id: string;
     title: string;

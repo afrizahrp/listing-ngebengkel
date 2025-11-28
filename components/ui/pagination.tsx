@@ -30,7 +30,7 @@ export function Pagination({
   pageSize,
   onPageChange,
   onPageSizeChange,
-  pageSizeOptions = [10, 20, 30],
+  pageSizeOptions = [12, 24, 36],
   className,
 }: PaginationProps) {
   const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;

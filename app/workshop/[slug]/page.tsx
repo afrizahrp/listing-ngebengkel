@@ -9,11 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video } from 'lucide-react';
+import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video, ShieldCheck } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { WorkshopMap } from '../components/WorkshopMap';
 import { ListingDisclaimer } from '../components/ListingDisclaimer';
 import { WorkingHoursDisplay } from './components/WorkingHoursDisplay';
+import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop';
+import { toast } from 'sonner';
 
 export default function WorkshopDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -66,6 +68,8 @@ export default function WorkshopDetailPage() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const claimMutation = useClaimWorkshop();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
@@ -201,6 +205,63 @@ export default function WorkshopDetailPage() {
               </Badge>
             )}
           </div>
+
+          {/* Claim Section - Di bagian atas agar lebih terlihat */}
+          {data.claimStatus !== 'CLAIMED' && (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Kamu bisa menambahkan 3 foto setelah melakukan klaim bahwa kamu adalah pemilik bengkel ini.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={async () => {
+                    if (!waitingListId) {
+                      toast.error('Error', {
+                        description: 'ID bengkel tidak ditemukan.',
+                      });
+                      return;
+                    }
+                    
+                    setIsClaiming(true);
+                    try {
+                      const result = await claimMutation.mutateAsync({
+                        waitingListId,
+                        phone: data.mobile || data.phone || '',
+                        name: data.name,
+                      });
+                      
+                      toast.success('Kode Verifikasi Dikirim', {
+                        description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
+                      });
+                      
+                      router.push(`/workshop/${slugOrId}/claim/verify?claimRequestId=${result.claimRequestId}`);
+                    } catch (error: unknown) {
+                      const description =
+                        error instanceof Error
+                          ? error.message || 'Terjadi kesalahan saat mengklaim bengkel.'
+                          : 'Terjadi kesalahan saat mengklaim bengkel.';
+                      toast.error('Gagal Klaim', {
+                        description,
+                      });
+                    } finally {
+                      setIsClaiming(false);
+                    }
+                  }}
+                  disabled={isClaiming || claimMutation.isPending}
+                >
+                  <ShieldCheck className="h-5 w-5" />
+                  <span className="font-medium">
+                    {isClaiming || claimMutation.isPending ? 'Memproses...' : 'Klaim Bengkel Ini'}
+                  </span>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Gallery Carousel */}
           {galleryImages.length > 0 && (
