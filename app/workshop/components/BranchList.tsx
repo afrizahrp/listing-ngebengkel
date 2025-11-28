@@ -36,7 +36,7 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const router = useRouter()
   const [openPromoIds, setOpenPromoIds] = useState<Set<string>>(new Set())
   // Track branch yang sudah berhasil diklaim di sisi UI (tanpa reload)
-  const [locallyClaimedIds, setLocallyClaimedIds] = useState<Set<string>>(new Set())
+  const [locallyClaimedIds] = useState<Set<string>>(new Set())
   const [claimingBranchId, setClaimingBranchId] = useState<string | null>(null)
   const claimMutation = useClaimWorkshop()
   if (branches.length === 0) {
