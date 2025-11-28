@@ -8,8 +8,9 @@ import { SearchBar } from './SearchBar';
 import { LoadingDots } from './LoadingDots';
 import { ErrorDisplay } from '@/components/ui/error-display';
 import type { BookingBranch } from '@/types/booking';
-import { useWaitingLists as useWL } from '@/queryHooks/useWaitingList';
+import { useWaitingListsPaginated } from '@/queryHooks/useWaitingList';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Pagination } from '@/components/ui/pagination';
 
 type CTAVariant = 'section' | 'dialog';
 
@@ -42,7 +43,14 @@ interface ExtendedBranch extends BookingBranch {
 }
 
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
-  const { data: waitingLists, isLoading, isError, error, refetch } = useWL();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const { data: paginatedData, isLoading, isError, error, refetch } = useWaitingListsPaginated({
+    page,
+    limit: pageSize,
+  });
+  const waitingLists = paginatedData?.data ?? [];
+  const totalRecords = paginatedData?.totalRecords ?? 0;
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [cityNameMap, setCityNameMap] = useState<Record<string, string>>({});
@@ -176,6 +184,21 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     });
   }, [branches, debouncedSearchTerm]);
 
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      setPage(1);
+    }
+  }, [debouncedSearchTerm]);
+
+  // Reset to page 1 when page size changes
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(1);
+  };
+
+  const totalPages = Math.ceil(totalRecords / pageSize);
+
   return (
     <section className={variant === 'section' ? 'w-full bg-white py-12 text-[#2f2f2f]' : 'w-full rounded-3xl bg-background text-[#2f2f2f]'}>
       <div
@@ -224,7 +247,22 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
               showBackButton={false}
             />
           ) : (
-            <BranchList branches={filteredBranches} />
+            <>
+              <BranchList branches={filteredBranches} />
+              {totalRecords > 0 && (
+                <div className="border-t border-gray-200 bg-white rounded-lg">
+                  <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalRecords={totalRecords}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[10, 20, 30]}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 

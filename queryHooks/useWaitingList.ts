@@ -19,6 +19,20 @@ type WaitingListListQueryOptions = Omit<
   'queryKey' | 'queryFn'
 >;
 
+type PaginatedWaitingListResponse = {
+  data: WaitingListItem[];
+  totalRecords: number;
+  total: number;
+};
+
+type PaginatedWaitingListQueryOptions = Omit<
+  UseQueryOptions<PaginatedWaitingListResponse, Error>,
+  'queryKey' | 'queryFn'
+> & {
+  page?: number;
+  limit?: number;
+};
+
 export const useWaitingList = (
   slugOrId: string | null,
   options?: WaitingListQueryOptions,
@@ -108,6 +122,44 @@ export const useWaitingLists = (options?: WaitingListListQueryOptions) => {
         const list: WaitingListItem[] =
           (Array.isArray(payload) ? payload : payload?.data) ?? [];
         return list;
+      } catch (error) {
+        throw new Error(
+          extractErrorMessage(error, 'Gagal memuat daftar waiting list.'),
+        );
+      }
+    },
+    ...restOptions,
+  });
+};
+
+export const useWaitingListsPaginated = (options?: PaginatedWaitingListQueryOptions) => {
+  const { enabled, page = 1, limit = 10, ...restOptions } = options ?? {};
+
+  return useQuery<PaginatedWaitingListResponse, Error>({
+    queryKey: ['waiting-list', 'paginated', page, limit],
+    enabled: enabled ?? true,
+    queryFn: async () => {
+      try {
+        const { data } = await sysApi.get<unknown>(
+          `${SYS_ENDPOINTS.waitingList.base}?page=${page}&limit=${limit}`,
+        );
+        const payload = data as any;
+        // Backend mengembalikan { data: [], totalRecords: number, total: number }
+        if (payload?.data && typeof payload?.totalRecords === 'number') {
+          return {
+            data: payload.data as WaitingListItem[],
+            totalRecords: payload.totalRecords,
+            total: payload.total ?? payload.totalRecords,
+          };
+        }
+        // Fallback untuk backward compatibility
+        const list: WaitingListItem[] =
+          (Array.isArray(payload) ? payload : payload?.data) ?? [];
+        return {
+          data: list,
+          totalRecords: list.length,
+          total: list.length,
+        };
       } catch (error) {
         throw new Error(
           extractErrorMessage(error, 'Gagal memuat daftar waiting list.'),

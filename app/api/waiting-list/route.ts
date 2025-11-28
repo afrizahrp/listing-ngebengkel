@@ -11,7 +11,19 @@ export async function GET(request: Request) {
 
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
-  const target = `${apiBase}/waiting-list`;
+  
+  // Extract query parameters from request URL
+  const { searchParams } = new URL(request.url);
+  const page = searchParams.get('page');
+  const limit = searchParams.get('limit');
+  
+  // Build query string for pagination
+  const queryParams = new URLSearchParams();
+  if (page) queryParams.set('page', page);
+  if (limit) queryParams.set('limit', limit);
+  
+  const queryString = queryParams.toString();
+  const target = `${apiBase}/waiting-list${queryString ? `?${queryString}` : ''}`;
 
   // Get headers dengan priority: anonymous_id > service token
   const headers = await getApiHeaders(request);
