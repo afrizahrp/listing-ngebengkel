@@ -13,6 +13,7 @@ import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft,
 import { useMemo, useState, useEffect } from 'react';
 import { WorkshopMap } from '../components/WorkshopMap';
 import { ListingDisclaimer } from '../components/ListingDisclaimer';
+import { WorkingHoursDisplay } from './components/WorkingHoursDisplay';
 
 export default function WorkshopDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -553,6 +554,11 @@ export default function WorkshopDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Jam Operasional */}
+          {waitingListId && (
+            <WorkingHoursDisplay waitingListId={waitingListId} />
+          )}
 
           {/* Map Embed */}
           <Card>
