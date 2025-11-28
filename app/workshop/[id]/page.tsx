@@ -54,7 +54,7 @@ export default function WorkshopDetailPage() {
     }
   }, [waitingListId, data?.id, images, isLoadingImages, isErrorImages]);
 
-  // Generate gallery images dari API atau fallback ke sample images
+  // Generate gallery images dari API atau fallback ke placeholder workshop/bengkel
   const galleryImages = useMemo(() => {
     if (images.length > 0) {
       // Sort by seq, then by isPrimary (primary first), then by createdAt
@@ -70,9 +70,9 @@ export default function WorkshopDetailPage() {
       console.log('[WorkshopDetail] Gallery images URLs:', urls);
       return urls;
     }
-    // Fallback ke sample images jika belum ada
-    console.log('[WorkshopDetail] No images found, using fallback');
-    return Array.from({ length: 7 }, (_, i) => `/images/${i + 1}.png`);
+    // Fallback ke placeholder workshop/bengkel jika belum ada image di wks_Images
+    console.log('[WorkshopDetail] No images found, using workshop/bengkel placeholder');
+    return ['/images/workshop-placeholder-1.webp']; // Placeholder identik dengan workshop/bengkel
   }, [images]);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
