@@ -16,11 +16,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get('page');
   const limit = searchParams.get('limit');
+  const searchTerm = searchParams.get('searchTerm');
+  const searchBy = searchParams.get('searchBy');
   
-  // Build query string for pagination
+  // Build query string for pagination and search
   const queryParams = new URLSearchParams();
   if (page) queryParams.set('page', page);
   if (limit) queryParams.set('limit', limit);
+  if (searchTerm) queryParams.set('searchTerm', searchTerm);
+  if (searchBy) queryParams.set('searchBy', searchBy);
   
   const queryString = queryParams.toString();
   const target = `${apiBase}/waiting-list${queryString ? `?${queryString}` : ''}`;

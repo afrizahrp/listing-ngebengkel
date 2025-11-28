@@ -45,14 +45,28 @@ interface ExtendedBranch extends BookingBranch {
 export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  // Check if search term is only "promo" keyword
+  const normalizedSearch = debouncedSearchTerm.trim().toLowerCase();
+  const isOnlyPromoKeyword = normalizedSearch === 'promo';
+  const hasPromoKeyword = /\bpromo\b/.test(normalizedSearch);
+  const searchWithoutPromo = normalizedSearch.replace(/\bpromo\b/g, '').trim();
+  
+  // If search term is only "promo", don't send searchTerm to backend (backend doesn't support promo filtering)
+  // Otherwise, send the search term (without "promo" keyword) to backend
+  const backendSearchTerm = isOnlyPromoKeyword ? undefined : (searchWithoutPromo || undefined);
+  const searchBy = backendSearchTerm ? 'name' : undefined;
+  
   const { data: paginatedData, isLoading, isError, error, refetch } = useWaitingListsPaginated({
     page,
     limit: pageSize,
+    searchTerm: backendSearchTerm,
+    searchBy,
   });
   const waitingLists = paginatedData?.data ?? [];
   const totalRecords = paginatedData?.totalRecords ?? 0;
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [cityNameMap, setCityNameMap] = useState<Record<string, string>>({});
 
   // Fetch city names for all unique city IDs using batch endpoint
@@ -159,30 +173,29 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     });
   }, [waitingLists, cityNameMap]);
 
+  // Filtering is now done in backend, but we still need to handle "promo" keyword filtering
+  // since backend searchBy doesn't support promo filtering
   const filteredBranches: ExtendedBranch[] = useMemo(() => {
-    const normalized = debouncedSearchTerm.trim().toLowerCase();
-    const hasPromoKeyword = /\bpromo\b/.test(normalized);
-    const rest = normalized.replace(/\bpromo\b/g, '').trim();
-
-    return branches.filter((b) => {
-      const p = b.promoPreview;
-      const hasPromo = Boolean(p);
-
-      // If user types 'promo' only → show all that have promo
-      if (hasPromoKeyword && rest.length === 0) return hasPromo;
-
-      const textHit =
-        rest.length === 0 ||
-        b.name.toLowerCase().includes(rest) ||
-        (b.company?.name || '').toLowerCase().includes(rest) ||
-        (b.typeName ? b.typeName.toLowerCase().includes(rest) : false);
-
-      if (hasPromoKeyword) {
-        return hasPromo && textHit;
-      }
-      return textHit;
-    });
-  }, [branches, debouncedSearchTerm]);
+    // If search term contains "promo", filter by promo in frontend
+    if (hasPromoKeyword) {
+      return branches.filter((b) => {
+        const p = b.promoPreview;
+        const hasPromo = Boolean(p);
+        
+        // If only "promo" keyword, show all with promo
+        if (isOnlyPromoKeyword) {
+          return hasPromo;
+        }
+        
+        // If "promo" + other text, show items with promo that also match the other text
+        // Backend already filtered by searchWithoutPromo, so we just need to filter by promo
+        return hasPromo;
+      });
+    }
+    
+    // Backend already filtered by searchTerm, so just return branches as-is
+    return branches;
+  }, [branches, hasPromoKeyword, isOnlyPromoKeyword]);
 
   // Reset to page 1 when search term changes
   useEffect(() => {

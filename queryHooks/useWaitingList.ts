@@ -31,6 +31,8 @@ type PaginatedWaitingListQueryOptions = Omit<
 > & {
   page?: number;
   limit?: number;
+  searchTerm?: string;
+  searchBy?: string;
 };
 
 export const useWaitingList = (
@@ -133,15 +135,22 @@ export const useWaitingLists = (options?: WaitingListListQueryOptions) => {
 };
 
 export const useWaitingListsPaginated = (options?: PaginatedWaitingListQueryOptions) => {
-  const { enabled, page = 1, limit = 10, ...restOptions } = options ?? {};
+  const { enabled, page = 1, limit = 10, searchTerm, searchBy, ...restOptions } = options ?? {};
 
   return useQuery<PaginatedWaitingListResponse, Error>({
-    queryKey: ['waiting-list', 'paginated', page, limit],
+    queryKey: ['waiting-list', 'paginated', page, limit, searchTerm, searchBy],
     enabled: enabled ?? true,
     queryFn: async () => {
       try {
+        // Build query string
+        const queryParams = new URLSearchParams();
+        queryParams.set('page', String(page));
+        queryParams.set('limit', String(limit));
+        if (searchTerm) queryParams.set('searchTerm', searchTerm);
+        if (searchBy) queryParams.set('searchBy', searchBy);
+        
         const { data } = await sysApi.get<unknown>(
-          `${SYS_ENDPOINTS.waitingList.base}?page=${page}&limit=${limit}`,
+          `${SYS_ENDPOINTS.waitingList.base}?${queryParams.toString()}`,
         );
         const payload = data as any;
         // Backend mengembalikan { data: [], totalRecords: number, total: number }
