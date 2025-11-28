@@ -72,7 +72,7 @@ export default function WorkshopDetailPage() {
     }
     // Fallback ke placeholder workshop/bengkel jika belum ada image di wks_Images
     console.log('[WorkshopDetail] No images found, using workshop/bengkel placeholder');
-    return ['/images/workshop-placeholder-1.webp']; // Placeholder identik dengan workshop/bengkel
+    return ['/images/workshop-placeholder-2.webp']; // Placeholder identik dengan workshop/bengkel
   }, [images]);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
