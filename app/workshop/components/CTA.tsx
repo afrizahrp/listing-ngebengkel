@@ -65,7 +65,12 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     searchTerm: backendSearchTerm,
     searchBy,
   });
-  const waitingLists = paginatedData?.data ?? [];
+  
+  // Memoize waitingLists to prevent unnecessary re-renders
+  const waitingLists = useMemo(() => {
+    return paginatedData?.data ?? [];
+  }, [paginatedData?.data]);
+  
   const totalRecords = paginatedData?.totalRecords ?? 0;
   const [cityNameMap, setCityNameMap] = useState<Record<string, string>>({});
 
