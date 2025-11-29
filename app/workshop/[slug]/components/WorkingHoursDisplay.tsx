@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { useWorkingHours, type WorkingHour } from '@/queryHooks/useWorkingHours';
+import { useWorkingHours } from '@/queryHooks/useWorkingHours';
 
 const WEEKDAY_NAMES = [
   'Minggu',
