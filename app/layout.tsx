@@ -95,6 +95,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://ngebengkel.com',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon.webp', type: 'image/webp', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/icon.png',
+  },
   category: 'Technology',
 };
 

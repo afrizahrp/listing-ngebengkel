@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video, ShieldCheck } from 'lucide-react';
+import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video, CameraIcon } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { WorkshopMap } from '../components/WorkshopMap';
 import { ListingDisclaimer } from '../components/ListingDisclaimer';
 import { WorkingHoursDisplay } from './components/WorkingHoursDisplay';
-import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop';
-import { toast } from 'sonner';
+import { CLAIM_MANUAL_WHATSAPP_NUMBER } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 export default function WorkshopDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -68,8 +68,6 @@ export default function WorkshopDetailPage() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
-  const claimMutation = useClaimWorkshop();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
@@ -219,6 +217,36 @@ export default function WorkshopDetailPage() {
                   variant="outline"
                   size="lg"
                   className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={() => {
+                    // Normalize nomor WhatsApp
+                    const digitsOnly = CLAIM_MANUAL_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')
+                    let normalized = digitsOnly
+                    if (digitsOnly.startsWith('0')) {
+                      normalized = `62${digitsOnly.slice(1)}`
+                    } else if (digitsOnly.startsWith('8')) {
+                      normalized = `62${digitsOnly}`
+                    }
+                    
+                    // Buat pesan untuk klaim bengkel
+                    const message = `Halo, saya ingin menambahkan foto pada listing ${data.name} dan mengaktifkan WhatsApp agar pelanggan bisa menghubungi langsung.`
+                    const waLink = `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
+                    
+                    // Buka WhatsApp
+                    window.open(waLink, '_blank', 'noopener,noreferrer')
+                  }}
+                >
+                  <CameraIcon className="h-5 w-5" />
+                  {/* <Image className="h-5 w-5" src="/images/photo-camera.svg" alt="Tambahkan Foto Bengkel" /> */}
+                  <span className="font-medium">
+                    
+                    Tambahkan Foto Bengkel
+                  </span>
+                </Button>
+                {/* 
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                   onClick={async () => {
                     if (!waitingListId) {
                       toast.error('Error', {
@@ -259,6 +287,7 @@ export default function WorkshopDetailPage() {
                     {isClaiming || claimMutation.isPending ? 'Memproses...' : 'Klaim Bengkel Ini'}
                   </span>
                 </Button>
+                */}
               </CardContent>
             </Card>
           )}
@@ -545,23 +574,27 @@ export default function WorkshopDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
+          {/* Action Buttons - WhatsApp disabled jika belum diklaim */}
           {whatsappUrl && (
             <Card>
               <CardContent className="pt-6">
                 <Button
-                  asChild
                   size="lg"
-                  className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white"
+                  className={cn(
+                    "w-full text-white",
+                    data.claimStatus === 'CLAIMED' 
+                      ? "bg-[#16A34A] hover:bg-[#15803D]" 
+                      : "bg-gray-400 cursor-not-allowed opacity-50"
+                  )}
+                  disabled={data.claimStatus !== 'CLAIMED'}
+                  onClick={() => {
+                    if (data.claimStatus === 'CLAIMED' && whatsappUrl) {
+                      window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
+                    }
+                  }}
                 >
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MessageCircle className="h-5 w-5 mr-2" />
-                    Hubungi via WhatsApp
-                  </a>
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Hubungi via WhatsApp
                 </Button>
               </CardContent>
             </Card>

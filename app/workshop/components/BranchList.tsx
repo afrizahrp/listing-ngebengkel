@@ -4,14 +4,13 @@ import Image from 'next/image'
 import { Card, CardTitle } from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles, ShieldCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, MessageCircle, Sparkles, CameraIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { BookingBranch } from '@/types/booking'
 // Removed SlotList import because slots are not shown now
 import { useRouter } from 'next/navigation'
-import { useClaimWorkshop } from '@/queryHooks/useClaimWorkshop'
-import { toast } from 'sonner'
 import { WorkingHourStatus } from './WorkingHourStatus'
+import { CLAIM_MANUAL_WHATSAPP_NUMBER } from '@/lib/constants'
 
 
 type PromoPreview = {
@@ -37,8 +36,6 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const [openPromoIds, setOpenPromoIds] = useState<Set<string>>(new Set())
   // Track branch yang sudah berhasil diklaim di sisi UI (tanpa reload)
   const [locallyClaimedIds] = useState<Set<string>>(new Set())
-  const [claimingBranchId, setClaimingBranchId] = useState<string | null>(null)
-  const claimMutation = useClaimWorkshop()
   if (branches.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -90,55 +87,76 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
           !!branchIdStr && locallyClaimedIds.has(branchIdStr)
         const isUnclaimed = !isAlreadyClaimedFromApi && !isLocallyClaimed
         
-        const handleClaim = async (e: React.MouseEvent) => {
+        // const handleClaim = async (e: React.MouseEvent) => {
+        //   e.stopPropagation()
+        //   e.preventDefault()
+        //   
+        //   if (!branch.id) return
+        //   
+        //   // Trim ID untuk menghilangkan spasi
+        //   const trimmedId = String(branch.id).trim()
+        //   if (!trimmedId) return
+        //   
+        //   // Prevent multiple clicks
+        //   if (claimingBranchId === trimmedId) return
+        //   
+        //   // Set claiming state untuk branch ini saja
+        //   setClaimingBranchId(trimmedId)
+        //   
+        //   // TODO: Show modal/form untuk input phone, name, email
+        //   // Untuk sekarang, gunakan data dari branch
+        //   try {
+        //     const result = await claimMutation.mutateAsync({
+        //       waitingListId: trimmedId,
+        //       phone: branch.phone || '',
+        //       name: branch.name,
+        //     })
+        //     // JANGAN langsung hide button - status masih PENDING_VERIFICATION
+        //     // Button akan hilang setelah verifikasi sukses (status = CLAIMED)
+        //     toast.success('Kode Verifikasi Dikirim', {
+        //       description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
+        //     })
+        //     // Redirect ke halaman verifikasi
+        //     if (!branch.slug) {
+        //       toast.error('Slug tidak tersedia', {
+        //         description: 'Tidak dapat redirect ke halaman verifikasi.',
+        //       })
+        //       return
+        //     }
+        //     router.push(`/workshop/${branch.slug}/claim/verify?claimRequestId=${result.claimRequestId}`)
+        //   } catch (error: unknown) {
+        //     const description =
+        //       error instanceof Error
+        //         ? error.message || 'Terjadi kesalahan saat mengklaim bengkel.'
+        //         : 'Terjadi kesalahan saat mengklaim bengkel.'
+        //     toast.error('Gagal Klaim', {
+        //       description,
+        //     })
+        //   } finally {
+        //     // Reset claiming state setelah selesai
+        //     setClaimingBranchId(null)
+        //   }
+        // }
+
+        const handleClaimManual = (e: React.MouseEvent) => {
           e.stopPropagation()
           e.preventDefault()
           
-          if (!branch.id) return
-          
-          // Trim ID untuk menghilangkan spasi
-          const trimmedId = String(branch.id).trim()
-          if (!trimmedId) return
-          
-          // Prevent multiple clicks
-          if (claimingBranchId === trimmedId) return
-          
-          // Set claiming state untuk branch ini saja
-          setClaimingBranchId(trimmedId)
-          
-          // TODO: Show modal/form untuk input phone, name, email
-          // Untuk sekarang, gunakan data dari branch
-          try {
-            const result = await claimMutation.mutateAsync({
-              waitingListId: trimmedId,
-              phone: branch.phone || '',
-              name: branch.name,
-            })
-            // JANGAN langsung hide button - status masih PENDING_VERIFICATION
-            // Button akan hilang setelah verifikasi sukses (status = CLAIMED)
-            toast.success('Kode Verifikasi Dikirim', {
-              description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
-            })
-            // Redirect ke halaman verifikasi
-            if (!branch.slug) {
-              toast.error('Slug tidak tersedia', {
-                description: 'Tidak dapat redirect ke halaman verifikasi.',
-              })
-              return
-            }
-            router.push(`/workshop/${branch.slug}/claim/verify?claimRequestId=${result.claimRequestId}`)
-          } catch (error: unknown) {
-            const description =
-              error instanceof Error
-                ? error.message || 'Terjadi kesalahan saat mengklaim bengkel.'
-                : 'Terjadi kesalahan saat mengklaim bengkel.'
-            toast.error('Gagal Klaim', {
-              description,
-            })
-          } finally {
-            // Reset claiming state setelah selesai
-            setClaimingBranchId(null)
+          // Normalize nomor WhatsApp
+          const digitsOnly = CLAIM_MANUAL_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')
+          let normalized = digitsOnly
+          if (digitsOnly.startsWith('0')) {
+            normalized = `62${digitsOnly.slice(1)}`
+          } else if (digitsOnly.startsWith('8')) {
+            normalized = `62${digitsOnly}`
           }
+          
+          // Buat pesan untuk klaim bengkel
+          const message = `Halo, saya ingin menambahkan foto pada listing ${branch.name} dan mengaktifkan WhatsApp agar pelanggan bisa menghubungi langsung.`
+          const waLink = `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
+          
+          // Buka WhatsApp
+          window.open(waLink, '_blank', 'noopener,noreferrer')
         }
         
         return (
@@ -238,55 +256,57 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
                       "h-10",
                       "border-blue-200 text-blue-700 hover:bg-blue-50"
                     )}
-                    onClick={handleClaim}
-                    disabled={claimingBranchId === branchIdStr || claimMutation.isPending}
+                    onClick={handleClaimManual}
                   >
-                    <ShieldCheck className="h-4 w-4" />
+                    {/* <ShieldCheck className="h-4 w-4" /> */}
+                    <CameraIcon className="h-4 w-4" />
                     <span className="font-medium">
-                      {claimingBranchId === branchIdStr ? 'Memproses...' : 'Klaim Bengkel Ini'}
+                      Tambahkan Foto Bengkel
                     </span>
                   </Button>
                 )}
                 
-                {/* WhatsApp Button */}
+                {/* WhatsApp Button - Disabled jika belum diklaim */}
                 {waLink && (
                   <Button
-                    asChild
                     variant="outline"
                     size="default"
                     className={cn(
                       "w-full gap-2 rounded-lg",
                       "transition-all duration-200",
                       "focus:outline-none",
-                      "h-10"
+                      "h-10",
+                      !isAlreadyClaimedFromApi && "opacity-50 cursor-not-allowed"
                     )}
                     style={{
                       borderColor: 'rgba(22, 163, 74, 0.4)',
                       color: '#16A34A',
                       backgroundColor: 'transparent'
                     }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a
-                      href={waLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Hubungi via WhatsApp"
-                      title={normalized}
-                      onMouseEnter={(e) => {
+                    disabled={!isAlreadyClaimedFromApi}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (isAlreadyClaimedFromApi && waLink) {
+                        window.open(waLink, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isAlreadyClaimedFromApi) {
                         e.currentTarget.style.backgroundColor = '#16A34A';
                         e.currentTarget.style.color = '#FFFFFF';
                         e.currentTarget.style.borderColor = '#16A34A';
-                      }}
-                      onMouseLeave={(e) => {
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isAlreadyClaimedFromApi) {
                         e.currentTarget.style.backgroundColor = 'transparent';
                         e.currentTarget.style.color = '#16A34A';
                         e.currentTarget.style.borderColor = 'rgba(22, 163, 74, 0.4)';
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      <span className="font-medium">WhatsApp</span>
-                    </a>
+                      }
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="font-medium">WhatsApp</span>
                   </Button>
                 )}
 
