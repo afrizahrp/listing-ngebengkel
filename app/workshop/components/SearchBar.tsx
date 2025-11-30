@@ -2,7 +2,7 @@
 
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 
 type SearchBarProps = {
   value: string;
@@ -31,10 +31,8 @@ export function SearchBar({
 }: SearchBarProps) {
   const internalInputRef = useRef<HTMLInputElement>(null);
   const inputRef = externalInputRef || internalInputRef;
-  const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = () => {
-    setIsFocused(true);
     onFocus?.();
   };
 
@@ -54,14 +52,17 @@ export function SearchBar({
         return;
       }
       // Check if mouse is over suggestions
+      const windowWithMouse = window as typeof window & {
+        lastMouseX?: number;
+        lastMouseY?: number;
+      };
       const mouseTarget = document.elementFromPoint(
-        (window as any).lastMouseX || 0,
-        (window as any).lastMouseY || 0
+        windowWithMouse.lastMouseX || 0,
+        windowWithMouse.lastMouseY || 0
       );
       if (mouseTarget && mouseTarget.closest('#search-suggestions')) {
         return;
       }
-      setIsFocused(false);
       onBlur?.();
     }, 200);
   };
@@ -76,7 +77,7 @@ export function SearchBar({
     if (suggestionsOpen && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [suggestionsOpen]);
+  }, [suggestionsOpen, inputRef]);
 
   return (
     <div className="relative" role="search">

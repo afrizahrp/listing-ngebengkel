@@ -3,8 +3,7 @@
 import { Card } from '@/components/ui/card';
 import { Wrench, Loader2 } from 'lucide-react';
 import { usePainPointSuggestions } from '@/queryHooks/usePainPointSuggestions';
-import { useRef, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import type { PainPointSearchResult } from '@/queryHooks/usePainPoints';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +24,6 @@ export function SearchSuggestions({
   onKeyDown,
   inputRef,
 }: SearchSuggestionsProps) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const isClickingRef = useRef(false);
@@ -34,6 +32,50 @@ export function SearchSuggestions({
     minLength,
     enabled: query.trim().length >= minLength,
   });
+
+  const handleSelect = useCallback((result: PainPointSearchResult) => {
+    if (!result?.painPoint?.slug) {
+      console.warn('Invalid pain point result:', result);
+      return;
+    }
+    
+    // Prevent multiple calls
+    if (isClickingRef.current) {
+      console.log('Already clicking, ignoring...');
+      return;
+    }
+    
+    isClickingRef.current = true;
+    setSelectedIndex(-1);
+    
+    const slug = result.painPoint.slug;
+    
+    console.log('handleSelect: Navigating to pain point:', slug);
+    
+    // Navigate immediately - use window.location for more reliable navigation
+    if (onSelect) {
+      // Pass slug for navigation
+      console.log('handleSelect: Calling onSelect with slug:', slug);
+      try {
+        onSelect(slug);
+      } catch (error) {
+        console.error('handleSelect: Error calling onSelect:', error);
+        // Fallback to direct navigation
+        window.location.href = `/bengkel?painPoint=${slug}`;
+      }
+    } else {
+      // Default: navigate ke listing dengan pain point
+      const url = `/bengkel?painPoint=${slug}`;
+      console.log('handleSelect: Navigating to:', url);
+      // Use window.location for more reliable navigation
+      window.location.href = url;
+    }
+    
+    // Reset flag after a moment
+    setTimeout(() => {
+      isClickingRef.current = false;
+    }, 1000);
+  }, [onSelect]);
 
   // Reset selected index saat suggestions berubah
   useEffect(() => {
@@ -74,7 +116,7 @@ export function SearchSuggestions({
     const input = inputRef.current;
     input.addEventListener('keydown', handleKeyDown);
     return () => input.removeEventListener('keydown', handleKeyDown);
-  }, [suggestions, selectedIndex, onKeyDown, inputRef]);
+  }, [suggestions, selectedIndex, onKeyDown, inputRef, handleSelect]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -117,50 +159,6 @@ export function SearchSuggestions({
       };
     }
   }, [suggestions, inputRef]);
-
-  const handleSelect = (result: PainPointSearchResult) => {
-    if (!result?.painPoint?.slug) {
-      console.warn('Invalid pain point result:', result);
-      return;
-    }
-    
-    // Prevent multiple calls
-    if (isClickingRef.current) {
-      console.log('Already clicking, ignoring...');
-      return;
-    }
-    
-    isClickingRef.current = true;
-    setSelectedIndex(-1);
-    
-    const slug = result.painPoint.slug;
-    
-    console.log('handleSelect: Navigating to pain point:', slug);
-    
-    // Navigate immediately - use window.location for more reliable navigation
-    if (onSelect) {
-      // Pass slug for navigation
-      console.log('handleSelect: Calling onSelect with slug:', slug);
-      try {
-        onSelect(slug);
-      } catch (error) {
-        console.error('handleSelect: Error calling onSelect:', error);
-        // Fallback to direct navigation
-        window.location.href = `/bengkel?painPoint=${slug}`;
-      }
-    } else {
-      // Default: navigate ke listing dengan pain point
-      const url = `/bengkel?painPoint=${slug}`;
-      console.log('handleSelect: Navigating to:', url);
-      // Use window.location for more reliable navigation
-      window.location.href = url;
-    }
-    
-    // Reset flag after a moment
-    setTimeout(() => {
-      isClickingRef.current = false;
-    }, 1000);
-  };
 
   if (!query || query.trim().length < minLength) {
     return null;

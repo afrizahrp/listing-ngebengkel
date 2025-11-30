@@ -181,7 +181,7 @@ export default function PainPointDetailPage() {
                   Temukan bengkel yang tepat di dekat Kamu untuk mengatasi masalah kendaraan ini.
                 </p>
                 <Button size="lg" onClick={() => router.push(`/bengkel?painPoint=${painPoint.slug}`)}>
-                  Cari Bengkel untuk "{painPoint.title}"
+                  Cari Bengkel untuk &quot;{painPoint.title}&quot;
                 </Button>
               </div>
             </CardContent>

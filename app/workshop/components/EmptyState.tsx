@@ -1,8 +1,7 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wrench, AlertCircle, Search } from 'lucide-react';
+import { Wrench, Search } from 'lucide-react';
 import { usePainPoints } from '@/queryHooks/usePainPoints';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';

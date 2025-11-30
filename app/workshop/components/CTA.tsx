@@ -697,7 +697,7 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     if (urlSearchQuery !== searchTerm) {
       setSearchTerm(urlSearchQuery);
     }
-  }, [urlSearchQuery]);
+  }, [urlSearchQuery, searchTerm]);
 
   // Reset page when painPoint changes
   useEffect(() => {
