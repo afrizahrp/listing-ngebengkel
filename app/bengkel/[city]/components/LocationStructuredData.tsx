@@ -15,7 +15,7 @@ export async function CityLocationStructuredData({ cityIdOrName }: { cityIdOrNam
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: `Daftar Bengkel di ${city.name}`,
-    description: `Koleksi bengkel terpercaya di ${city.name}. Temukan bengkel terdekat untuk servis kendaraan Anda.`,
+    description: `Koleksi bengkel terpercaya di ${city.name}. Temukan bengkel terdekat untuk servis kendaraan Kamu.`,
     url: `https://ngebengkel.com/bengkel/${encodeURIComponent(createSlug(city.name))}`,
     mainEntity: {
       '@type': 'ItemList',

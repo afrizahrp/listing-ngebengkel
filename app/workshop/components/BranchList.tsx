@@ -38,10 +38,12 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
   const [locallyClaimedIds] = useState<Set<string>>(new Set())
   if (branches.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Tidak ada bengkel yang cocok dengan filter saat ini. Coba pilih kota lain atau sesuaikan
-        kata kunci pencarian.
-      </p>
+      <div role="status" aria-live="polite">
+        <p className="text-sm text-muted-foreground">
+          Tidak ada bengkel yang cocok dengan filter saat ini. Coba pilih kota lain atau sesuaikan
+          kata kunci pencarian.
+        </p>
+      </div>
     )
   }
 
@@ -174,9 +176,12 @@ export function BranchList({ branches, onBranchClick }: BranchListProps) {
             tabIndex={0}
             onClick={handleOpenDetail}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') handleOpenDetail()
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpenDetail();
+              }
             }}
-            aria-label={`Buka detail ${branch.name}`}
+            aria-label={`Buka detail ${branch.name}${branch.typeName ? ` - ${branch.typeName}` : ''}`}
           >
             {/* Promo Badge - Pojok Kiri Atas */}
             {branch.promoPreview && (

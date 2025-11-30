@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!city || !district) {
     return {
       title: 'Bengkel di Lokasi Tidak Ditemukan',
-      description: 'Halaman bengkel untuk lokasi yang Anda cari tidak ditemukan.',
+      description: 'Halaman bengkel untuk lokasi yang Kamu cari tidak ditemukan.',
       robots: {
         index: false,
         follow: false,
@@ -34,7 +34,7 @@ export async function generateMetadata({
   const districtName = district.name;
   const workshopCount = workshops.length;
   const title = `Daftar Bengkel di ${districtName}, ${cityName} - ${workshopCount} Bengkel Terdekat`;
-  const description = `Cari bengkel terdekat di ${districtName}, ${cityName}. Temukan ${workshopCount > 0 ? `${workshopCount} bengkel` : 'bengkel'} berkualitas untuk servis kendaraan Anda di ${districtName}, ${cityName}. Booking online, mudah dan cepat.`;
+  const description = `Cari bengkel terdekat di ${districtName}, ${cityName}. Temukan ${workshopCount > 0 ? `${workshopCount} bengkel` : 'bengkel'} berkualitas untuk servis kendaraan Kamu di ${districtName}, ${cityName}. Booking online, mudah dan cepat.`;
 
   const canonicalUrl = `https://ngebengkel.com/bengkel/${encodeURIComponent(cityName.toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent(districtName.toLowerCase().replace(/\s+/g, '-'))}`;
 

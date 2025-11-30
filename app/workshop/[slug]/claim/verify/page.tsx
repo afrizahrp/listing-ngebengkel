@@ -124,7 +124,7 @@ export default function ClaimVerifyPage() {
       });
 
       toast.success('Kode Baru Dikirim', {
-        description: 'Kode verifikasi baru telah dikirim ke WhatsApp Anda.',
+        description: 'Kode verifikasi baru telah dikirim ke WhatsApp Kamu.',
       });
 
       // Reset timer
@@ -204,7 +204,7 @@ export default function ClaimVerifyPage() {
               disabled={verifyMutation.isPending}
             />
             <p className="text-sm text-muted-foreground">
-              Masukkan kode 6 digit yang telah dikirim ke WhatsApp Anda
+              Masukkan kode 6 digit yang telah dikirim ke WhatsApp Kamu
             </p>
           </div>
 

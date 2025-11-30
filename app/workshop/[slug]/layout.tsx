@@ -93,6 +93,60 @@ async function getPromos(waitingListId: string) {
   }
 }
 
+async function getPainPointsByWorkshopTypes(workshopTypes: Array<{ id?: string; name?: string }>) {
+  try {
+    if (!workshopTypes || workshopTypes.length === 0) {
+      return [];
+    }
+
+    const token = await getServiceTokenWithRefresh();
+    const workshopTypeIds = workshopTypes
+      .map((wt) => wt.id)
+      .filter(Boolean) as string[];
+
+    if (workshopTypeIds.length === 0) {
+      return [];
+    }
+
+    // Fetch pain points yang terkait dengan workshop types ini
+    // Note: Kita perlu fetch semua pain points aktif dan filter berdasarkan workshop type mapping
+    // Untuk sekarang, kita fetch popular pain points dan filter berdasarkan keywords yang match dengan workshop type names
+    const res = await fetch(`${apiBase}/pain-points?isActive=true&isPopular=true&limit=50`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const painPoints = Array.isArray(data) ? data : (data?.data || []);
+
+      // Filter pain points yang keywords-nya match dengan workshop type names
+      const workshopTypeNames = workshopTypes
+        .map((wt) => wt.name?.toLowerCase())
+        .filter(Boolean) as string[];
+
+      const matchedPainPoints = painPoints.filter((pp: { keywords?: string[] }) => {
+        if (!pp.keywords || pp.keywords.length === 0) return false;
+        return pp.keywords.some((keyword: string) =>
+          workshopTypeNames.some((typeName) =>
+            keyword.toLowerCase().includes(typeName) || typeName.includes(keyword.toLowerCase()),
+          ),
+        );
+      });
+
+      return matchedPainPoints.slice(0, 5); // Limit to 5 most relevant
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error fetching pain points for SEO:', error);
+    return [];
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -104,7 +158,7 @@ export async function generateMetadata({
   if (!workshop) {
     return {
       title: 'Bengkel Tidak Ditemukan',
-      description: 'Halaman bengkel yang Anda cari tidak ditemukan.',
+      description: 'Halaman bengkel yang Kamu cari tidak ditemukan.',
       robots: {
         index: false,
         follow: false,
@@ -135,6 +189,16 @@ export async function generateMetadata({
   const isCategoryMobil = /mobil|car|automobile|otomotif/i.test(categoryNameLower);
   const isCategoryMotor = /motor|motorcycle|sepeda motor/i.test(categoryNameLower);
 
+  // Get pain points related to this workshop's service types
+  const relatedPainPoints = await getPainPointsByWorkshopTypes(workshopTypes);
+  const painPointKeywords: string[] = [];
+  relatedPainPoints.forEach((pp: { title?: string; keywords?: string[] }) => {
+    if (pp.title) painPointKeywords.push(pp.title);
+    if (pp.keywords && Array.isArray(pp.keywords)) {
+      painPointKeywords.push(...pp.keywords);
+    }
+  });
+
   // Get promos for enhanced description
   const promos = await getPromos(workshop.id);
   const hasPromo = promos.length > 0;
@@ -161,6 +225,8 @@ export async function generateMetadata({
     workshop.city,
     workshop.province,
     'bengkel terdekat',
+    // Add pain point keywords untuk SEO
+    ...painPointKeywords.slice(0, 10), // Limit to 10 untuk menghindari keyword stuffing
   ];
 
   // Add category-based keywords (wks_Category)

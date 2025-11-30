@@ -23,7 +23,7 @@ export async function generateMetadata({
   if (!type || !city) {
     return {
       title: 'Bengkel Tidak Ditemukan',
-      description: 'Halaman bengkel untuk jenis dan lokasi yang Anda cari tidak ditemukan.',
+      description: 'Halaman bengkel untuk jenis dan lokasi yang Kamu cari tidak ditemukan.',
       robots: {
         index: false,
         follow: false,
@@ -35,7 +35,7 @@ export async function generateMetadata({
   const cityName = city.name;
   const workshopCount = workshops.length;
   const title = `Cari Bengkel ${typeName} di ${cityName} - ${workshopCount} Bengkel Terdekat`;
-  const description = `Cari bengkel ${typeName} terdekat di ${cityName}. Temukan ${workshopCount > 0 ? `${workshopCount} bengkel ${typeName}` : `bengkel ${typeName}`} berkualitas untuk servis kendaraan Anda di ${cityName}. Booking online, mudah dan cepat.`;
+  const description = `Cari bengkel ${typeName} terdekat di ${cityName}. Temukan ${workshopCount > 0 ? `${workshopCount} bengkel ${typeName}` : `bengkel ${typeName}`} berkualitas untuk servis kendaraan Kamu di ${cityName}. Booking online, mudah dan cepat.`;
 
   const typeSlug = createSlug(typeName);
   const citySlug = createSlug(cityName);

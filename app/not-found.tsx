@@ -20,7 +20,7 @@ export default function NotFound() {
             Halaman Tidak Ditemukan
           </h2>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Maaf, halaman yang Anda cari tidak ada atau telah dipindahkan.
+            Maaf, halaman yang Kamu cari tidak ada atau telah dipindahkan.
           </p>
         </div>
 

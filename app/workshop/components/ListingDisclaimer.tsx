@@ -12,7 +12,7 @@ export function ListingDisclaimer() {
             Listing ini dapat berasal dari data publik atau informasi yang diberikan langsung oleh pemilik.
           </p>
           <p>
-            Jika ini adalah bengkel Anda,{' '}
+            Jika ini adalah bengkel Kamu,{' '}
             <span className="text-foreground font-medium">klaim listing</span>{' '}
             untuk mengelola foto, jam buka, dan layanan.
           </p>

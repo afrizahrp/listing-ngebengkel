@@ -187,6 +187,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Abaikan error agar sitemap tetap ter-generate minimal untuk halaman utama
   }
 
+  // Tambahkan pain points ke sitemap
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const painPointsRes = await fetch(`${apiBase}/pain-points?isActive=true&limit=1000`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (painPointsRes.ok) {
+      const painPointsData = (await painPointsRes.json()) as {
+        data?: Array<{ slug: string; updatedAt?: string }>;
+      } | Array<{ slug: string; updatedAt?: string }>;
+      const painPoints: Array<{ slug: string; updatedAt?: string }> = Array.isArray(painPointsData)
+        ? painPointsData
+        : Array.isArray(painPointsData?.data)
+          ? painPointsData.data
+          : [];
+
+      for (const painPoint of painPoints) {
+        if (painPoint.slug) {
+          routes.push({
+            url: `${baseUrl}/masalah/${encodeURIComponent(painPoint.slug)}`,
+            lastModified: painPoint.updatedAt ? new Date(painPoint.updatedAt) : new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.6,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error generating pain points sitemap:', error);
+    // Abaikan error agar sitemap tetap ter-generate
+  }
+
   return routes;
 }
 

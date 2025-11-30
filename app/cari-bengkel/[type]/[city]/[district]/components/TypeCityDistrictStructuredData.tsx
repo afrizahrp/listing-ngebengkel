@@ -31,7 +31,7 @@ export async function TypeCityDistrictStructuredData({
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: `Cari Bengkel ${type.name} di ${district.name}, ${city.name}`,
-    description: `Koleksi bengkel ${type.name} terpercaya di ${district.name}, ${city.name}. Temukan bengkel ${type.name} terdekat untuk servis kendaraan Anda.`,
+    description: `Koleksi bengkel ${type.name} terpercaya di ${district.name}, ${city.name}. Temukan bengkel ${type.name} terdekat untuk servis kendaraan Kamu.`,
     url: `https://ngebengkel.com/cari-bengkel/${encodeURIComponent(createSlug(type.name))}/${encodeURIComponent(createSlug(city.name))}/${encodeURIComponent(createSlug(district.name))}`,
     mainEntity: {
       '@type': 'ItemList',

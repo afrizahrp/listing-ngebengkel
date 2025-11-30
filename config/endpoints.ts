@@ -38,6 +38,12 @@ export const SYS_ENDPOINTS = {
     byWaitingList: (waitingListId: string) => `/api/wks/videos?waitingListId=${waitingListId}`,
     byBranch: (branchId: string) => `/api/wks/videos?branchId=${branchId}`,
   },
+  painPoints: {
+    base: '/api/pain-points',
+    bySlug: (slug: string) => `/api/pain-points/${slug}`,
+    search: '/api/pain-points/search',
+    serviceTypes: '/api/pain-points/service-types',
+  },
 } as const;
 
 export type SysEndpointGroup = keyof typeof SYS_ENDPOINTS;

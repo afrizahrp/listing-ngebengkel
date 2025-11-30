@@ -127,7 +127,7 @@ export function ErrorDisplay({
             >
               <Link href="/">
                 <Home className="w-5 h-5 mr-2" />
-                Kembali ke Beranda
+                Kembali ke Listing
               </Link>
             </Button>
           )}
