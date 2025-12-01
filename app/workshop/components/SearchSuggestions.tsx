@@ -84,39 +84,49 @@ export function SearchSuggestions({
 
   // Handle keyboard navigation
   useEffect(() => {
-    if (!onKeyDown || !inputRef?.current) return;
+    if (!inputRef?.current) return;
+    // Only add listener when suggestions exist and are available
+    if (!suggestions || suggestions.length === 0) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!suggestions || suggestions.length === 0) return;
-
+      // Only handle navigation keys, let other keys pass through for normal typing
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault();
+          event.stopPropagation();
           setSelectedIndex((prev) =>
             prev < suggestions.length - 1 ? prev + 1 : prev,
           );
           break;
         case 'ArrowUp':
           event.preventDefault();
+          event.stopPropagation();
           setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
           break;
         case 'Enter':
           if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
             event.preventDefault();
+            event.stopPropagation();
             handleSelect(suggestions[selectedIndex]);
           }
           break;
         case 'Escape':
+          event.preventDefault();
+          event.stopPropagation();
           setSelectedIndex(-1);
           inputRef.current?.blur();
           break;
+        default:
+          // Let all other keys pass through for normal typing
+          return;
       }
     };
 
     const input = inputRef.current;
-    input.addEventListener('keydown', handleKeyDown);
-    return () => input.removeEventListener('keydown', handleKeyDown);
-  }, [suggestions, selectedIndex, onKeyDown, inputRef, handleSelect]);
+    // Use capture phase to ensure we can prevent default if needed, but only for specific keys
+    input.addEventListener('keydown', handleKeyDown, false);
+    return () => input.removeEventListener('keydown', handleKeyDown, false);
+  }, [suggestions, selectedIndex, inputRef, handleSelect]);
 
   // Scroll selected item into view
   useEffect(() => {

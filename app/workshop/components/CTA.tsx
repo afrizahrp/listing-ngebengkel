@@ -692,12 +692,13 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     }
   }, [debouncedSearchTerm]);
 
-  // Sync searchTerm dengan URL query parameter
+  // Sync searchTerm dengan URL query parameter (hanya saat URL berubah, bukan saat searchTerm berubah)
   useEffect(() => {
     if (urlSearchQuery !== searchTerm) {
       setSearchTerm(urlSearchQuery);
     }
-  }, [urlSearchQuery, searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSearchQuery]);
 
   // Reset page when painPoint changes
   useEffect(() => {
