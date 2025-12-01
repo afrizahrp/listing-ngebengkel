@@ -21,7 +21,6 @@ export function SearchSuggestions({
   onSelect,
   className,
   minLength = 2,
-  onKeyDown,
   inputRef,
 }: SearchSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
