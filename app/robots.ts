@@ -9,10 +9,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/'],
+        allow: [
+          '/',
+          '/_next/static/', // Allow static assets (fonts, CSS, JS, images)
+        ],
         disallow: [
           '/api/', // proxy/API internal
-          '/_next/', // assets handled by Next
+          '/_next/data/', // Block Next.js data files
           '/admin/', // jaga kalau ada route internal
         ],
       },
