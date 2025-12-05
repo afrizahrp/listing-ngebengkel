@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     description: meta.description,
     images: [
       {
-        url: 'https://ngebengkel.com/logo.webp',
+        url: 'https://ngebengkel.com/logo-circle.webp',
         width: 1200,
         height: 630,
         alt: 'Ngebengkel.com - cari bengkel promosi',
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     description: meta.description,
     images: [
       {
-        url: 'https://ngebengkel.com/logo.webp',
+        url: 'https://ngebengkel.com/logo-circle.webp',
         width: 1200,
         height: 630,
         alt: 'Ngebengkel.com - cari bengkel promosi',

@@ -224,6 +224,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Abaikan error agar sitemap tetap ter-generate
   }
 
+  // Tambahkan published articles ke sitemap
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const articlesRes = await fetch(`${apiBase}/wks/articles?status=PUBLISHED&limit=1000`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (articlesRes.ok) {
+      const articlesData = (await articlesRes.json()) as {
+        data?: Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
+        pagination?: { total: number };
+      } | Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
+      
+      const articles: Array<{ slug: string; publishedAt?: string; updatedAt?: string }> = Array.isArray(articlesData)
+        ? articlesData
+        : Array.isArray(articlesData?.data)
+          ? articlesData.data
+          : [];
+
+      for (const article of articles) {
+        if (article.slug) {
+          routes.push({
+            url: `${baseUrl}/artikel/${encodeURIComponent(article.slug)}`,
+            lastModified: article.publishedAt ? new Date(article.publishedAt) : article.updatedAt ? new Date(article.updatedAt) : new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.8,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error generating articles sitemap:', error);
+    // Abaikan error agar sitemap tetap ter-generate
+  }
+
   return routes;
 }
 

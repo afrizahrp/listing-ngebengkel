@@ -44,6 +44,11 @@ export const SYS_ENDPOINTS = {
     search: '/api/pain-points/search',
     serviceTypes: '/api/pain-points/service-types',
   },
+  articles: {
+    base: '/api/wks/articles',
+    bySlug: (slug: string) => `/api/wks/articles/slug/${slug}`,
+    recommendedWorkshops: (articleId: string) => `/api/wks/articles/${articleId}/recommended-workshops`,
+  },
 } as const;
 
 export type SysEndpointGroup = keyof typeof SYS_ENDPOINTS;

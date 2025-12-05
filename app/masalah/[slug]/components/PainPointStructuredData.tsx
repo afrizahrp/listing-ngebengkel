@@ -14,7 +14,7 @@ export function PainPointStructuredData({ painPoint }: PainPointStructuredDataPr
       '@type': 'Article',
       headline: painPoint.title,
       description: painPoint.description || painPoint.title,
-      image: painPoint.imageUrl || 'https://ngebengkel.com/logo.webp',
+      image: painPoint.imageUrl || 'https://ngebengkel.com/logo-circle.webp',
       datePublished: painPoint.createdAt,
       dateModified: painPoint.updatedAt,
       author: {
@@ -27,7 +27,7 @@ export function PainPointStructuredData({ painPoint }: PainPointStructuredDataPr
         name: 'Ngebengkel.com',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://ngebengkel.com/logo.webp',
+          url: 'https://ngebengkel.com/logo-circle.webp',
         },
       },
       mainEntityOfPage: {

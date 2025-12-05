@@ -232,7 +232,7 @@ export async function WorkshopStructuredData({ slugOrId }: { slugOrId: string })
     '@id': `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshop.name)}`,
     name: workshop.name,
     description: workshop.description || `${workshop.name} - Bengkel terpercaya di ${workshop.city || workshop.province || 'Indonesia'}`,
-    image: workshop.logo || 'https://ngebengkel.com/logo.webp',
+    image: workshop.logo || 'https://ngebengkel.com/logo-circle.webp',
     address: {
       '@type': 'PostalAddress',
       streetAddress: workshop.address,

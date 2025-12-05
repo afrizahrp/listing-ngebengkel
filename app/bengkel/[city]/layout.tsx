@@ -52,7 +52,7 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: 'https://ngebengkel.com/logo.webp',
+          url: 'https://ngebengkel.com/logo-circle.webp',
           width: 1200,
           height: 630,
           alt: `Daftar Bengkel di ${cityName} - Ngebengkel.com`,
@@ -63,7 +63,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description,
-      images: ['https://ngebengkel.com/logo.webp'],
+      images: ['https://ngebengkel.com/logo-circle.webp'],
       creator: '@ngebengkel',
       site: '@ngebengkel',
     },

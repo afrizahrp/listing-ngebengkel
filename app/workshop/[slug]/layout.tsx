@@ -296,7 +296,7 @@ export async function generateMetadata({
         },
       ] : [
         {
-          url: 'https://ngebengkel.com/logo.webp',
+          url: 'https://ngebengkel.com/logo-circle.webp',
           width: 1200,
           height: 630,
           alt: `${workshopName} - Ngebengkel.com`,
@@ -307,7 +307,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description: fullDescription,
-      images: workshop.logo ? [workshop.logo] : ['https://ngebengkel.com/logo.webp'],
+      images: workshop.logo ? [workshop.logo] : ['https://ngebengkel.com/logo-circle.webp'],
       creator: '@ngebengkel',
       site: '@ngebengkel',
     },
