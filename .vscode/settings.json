@@ -18,6 +18,7 @@
     "**/.next": true,
     "**/dist": true,
     "**/out": true
-  }
+  },
+  "git.ignoreLimitWarning": true
 }
 

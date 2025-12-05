@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
 import { createSlug } from '@/lib/utils/slug';
+import { getCityData, getProvinceData } from '@/lib/utils/location-data';
 import { WorkshopStructuredData } from './components/WorkshopStructuredData';
 
 const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
@@ -167,15 +168,25 @@ export async function generateMetadata({
   }
 
   const workshopName = workshop.name || 'Bengkel';
+  
+  // Fetch actual location names (server-side) to avoid showing IDs in meta tags
+  const [cityData, provinceData] = await Promise.all([
+    workshop.city ? getCityData(workshop.city) : null,
+    workshop.province ? getProvinceData(workshop.province) : null,
+  ]);
+
+  const cityName = cityData?.name || null;
+  const provinceName = provinceData?.name || null;
+  
   const description = workshop.description || 
-    `${workshopName} - Bengkel terpercaya di ${workshop.city || workshop.province || 'Indonesia'}. Layanan servis kendaraan berkualitas dengan harga terjangkau.`;
+    `${workshopName} - Bengkel terpercaya di ${cityName || provinceName || 'Indonesia'}. Layanan servis kendaraan berkualitas dengan harga terjangkau.`;
   
   const categoryName = workshop.categoryName || '';
   const locationParts = [
     workshop.subdistrict,
     workshop.district,
-    workshop.city,
-    workshop.province,
+    cityName || workshop.city,
+    provinceName || workshop.province,
   ].filter(Boolean);
   const location = locationParts.length > 0 ? locationParts.join(', ') : 'Indonesia';
 
@@ -208,11 +219,11 @@ export async function generateMetadata({
 
   const fullDescription = `${description}${promoText} Hubungi kami untuk informasi lebih lanjut.`;
 
-  // Build title with location and category if available
+  // Build title with actual location names (not IDs) for proper SEO
   const titleParts = [workshopName];
   if (categoryName) titleParts.push(categoryName);
-  if (workshop.city) titleParts.push(workshop.city);
-  const title = titleParts.join(' - ');
+  if (cityName) titleParts.push(cityName);
+  const title = `${titleParts.join(' - ')} | Ngebengkel.com`;
 
   const canonicalUrl = `https://ngebengkel.com/workshop/${workshop.slug || createSlug(workshopName)}`;
 
@@ -222,8 +233,8 @@ export async function generateMetadata({
     'bengkel',
     categoryName,
     ...typeNames,
-    workshop.city,
-    workshop.province,
+    cityName || workshop.city,
+    provinceName || workshop.province,
     'bengkel terdekat',
     // Add pain point keywords untuk SEO
     ...painPointKeywords.slice(0, 10), // Limit to 10 untuk menghindari keyword stuffing
