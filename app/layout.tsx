@@ -117,7 +117,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <GoogleSearchConsoleVerification />
+        {/* <GoogleSearchConsoleVerification /> */}
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         <PageViewTrackerWrapper />
         <AnonymousSessionInitializer />
