@@ -65,6 +65,23 @@ async function getServiceToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Check if slug exists as a pain point
+ */
+async function isPainPointSlug(slug: string): Promise<boolean> {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100';
+    const response = await fetch(`${apiUrl}/api/pain-points/${slug}`, {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error checking pain point:', error);
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   // ===== WWW to non-WWW redirect =====
   const hostname = request.headers.get('host') || '';
@@ -76,6 +93,17 @@ export async function middleware(request: NextRequest) {
   // ===== End WWW redirect =====
 
   const { pathname } = request.nextUrl;
+
+  // ===== Redirect /artikel/{slug} to /masalah/{slug} if pain point exists =====
+  if (pathname.startsWith('/artikel/')) {
+    const slug = pathname.replace('/artikel/', '').split('/')[0].replace(/^seasonal-/, '');
+    
+    if (slug && await isPainPointSlug(slug)) {
+      const newUrl = new URL(`/masalah/${slug}`, request.url);
+      return NextResponse.redirect(newUrl, { status: 301 });
+    }
+  }
+  // ===== End artikel redirect =====
 
   // Hanya handle route workshop/[slug] yang terlihat seperti ID
   const workshopMatch = pathname.match(/^\/workshop\/([^/]+)$/);

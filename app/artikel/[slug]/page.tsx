@@ -46,6 +46,12 @@ export default function ArticleDetailPage() {
   useEffect(() => {
     if (slug) {
       fetchArticleBySlug(slug).then((articleData) => {
+        // Redirect to /masalah/{slug} if pain point exists and matches the slug
+        if (articleData?.painPoint?.slug === slug) {
+          router.replace(`/masalah/${slug}`);
+          return;
+        }
+
         if (articleData?.id) {
           fetchRecommendedWorkshops(articleData.id);
         }
@@ -53,7 +59,7 @@ export default function ArticleDetailPage() {
         console.error('Failed to fetch article:', err);
       });
     }
-  }, [slug, fetchArticleBySlug, fetchRecommendedWorkshops]);
+  }, [slug, fetchArticleBySlug, fetchRecommendedWorkshops, router]);
 
   const content = article?.content || {};
 
@@ -126,21 +132,38 @@ export default function ArticleDetailPage() {
   }
 
   const articleSlug = article.slug?.replace(/^seasonal-/, '') || article.slug;
+  const painPointSlug = article.painPoint?.slug;
+  const painPointTitle = article.painPoint?.title || 'kendala ini';
+  const isSeasonal = !article.painPoint; // Detect if it's a seasonal article
+
 
   return (
     <>
       <ArticleStructuredData article={article} />
       
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali
-        </Button>
+               {!isSeasonal && (
+
+       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <Link href={painPointSlug ? `/bengkel?painPoint=${painPointSlug}` : '/bengkel'}>
+            <Button size="sm">
+              Cari bengkel untuk {painPointTitle}
+            </Button>
+          </Link>
+        
+        </div>
+        )}
+
+         {/* Alternative CTA for seasonal articles */}
+        {isSeasonal && (
+          <div className="mb-6">
+            <Link href="/bengkel">
+              <Button size="sm">
+                Cari Bengkel Terdekat
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Article Header */}
         <article className="space-y-6">
