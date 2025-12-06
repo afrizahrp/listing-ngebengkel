@@ -14,7 +14,7 @@ export async function GET(
 
   const baseTrim = base.replace(/\/+$/, '');
   const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
-  const target = `${apiBase}/wks/articles/slug/${params.slug}`;
+  const target = `${apiBase}/wks/articles/slug/${encodeURIComponent(params.slug)}`;
 
   // Get headers dengan priority: anonymous_id > service token
   const headers = await getApiHeaders(request);
@@ -26,7 +26,6 @@ export async function GET(
 
   // If unauthorized dan pakai service token, coba refresh sekali
   if (res.status === 401 && headers['Authorization']) {
-    // Clear cache dan coba lagi dengan service token baru
     if (typeof global !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).cachedServiceToken = null;
