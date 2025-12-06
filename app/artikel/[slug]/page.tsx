@@ -6,7 +6,7 @@ import { useArticles } from '@/queryHooks/useArticles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench } from 'lucide-react';
+import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench, Star, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArticleStructuredData } from './components/ArticleStructuredData';
@@ -185,6 +185,8 @@ export default function ArticleDetailPage() {
                 </section>
               )}
 
+               
+
               {/* Safety Tips */}
               {content.safety && (
                 <section className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
@@ -275,7 +277,7 @@ export default function ArticleDetailPage() {
                 ))}
               </div>
               <div className="mt-6 text-center">
-                <Link href={`/cari-bengkel/${article.painPoint?.slug}`}>
+                <Link href={`/bengkel?painPoint=${article.painPoint?.slug}`}>
                   <Button size="lg">
                     Lihat Semua Bengkel untuk {article.painPoint?.title}
                   </Button>
