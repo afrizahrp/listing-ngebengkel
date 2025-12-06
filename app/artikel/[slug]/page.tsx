@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShareButton } from '@/components/ui/share-button';
-import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench } from 'lucide-react';
+import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench, MessageCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArticleStructuredData } from './components/ArticleStructuredData';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CATEGORY_COLORS: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-800 border-red-200',
@@ -18,12 +20,26 @@ const CATEGORY_COLORS: Record<string, string> = {
   MAINTENANCE: 'bg-green-100 text-green-800 border-green-200',
   BODYWORK: 'bg-purple-100 text-purple-800 border-purple-200',
   ELECTRICAL: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  SUSPENSION: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  TIRES: 'bg-pink-100 text-pink-800 border-pink-200',
 };
 
 export default function ArticleDetailPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
-  const slug = params?.slug as string;
+  const rawSlug = (params?.slug as string) || '';
+  const slug = rawSlug.replace(/^seasonal-/, '');
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    || (typeof window !== 'undefined' && window.location.origin)
+    || 'https://ngebengkel.com';
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(baseUrl);
+    }
+  };
 
   const { article, workshops, loading, error, fetchArticleBySlug, fetchRecommendedWorkshops } = useArticles();
 
@@ -41,17 +57,52 @@ export default function ArticleDetailPage() {
 
   const content = article?.content || {};
 
-  if (loading) {
-    return (
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-        </div>
-      </main>
-    );
-  }
+  // Only show error/skeleton if we've attempted to load (loading was true at some point)
+  if (error || (!article && loading === false)) {
+    if (loading) {
+      return (
+        <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            {/* Back Button Skeleton */}
+            <Skeleton className="h-10 w-24" />
 
-  if (error || !article) {
+            {/* Meta Info Skeleton */}
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+
+            {/* Title Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-3/4" />
+            </div>
+
+            {/* Featured Image Skeleton */}
+            <Skeleton className="w-full h-[400px] rounded-lg" />
+
+            {/* Content Skeleton */}
+            <Card>
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-3">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <Card className="p-8 text-center">
@@ -69,6 +120,13 @@ export default function ArticleDetailPage() {
     );
   }
 
+  // At this point, article is guaranteed to be non-null
+  if (!article) {
+    return null;
+  }
+
+  const articleSlug = article.slug?.replace(/^seasonal-/, '') || article.slug;
+
   return (
     <>
       <ArticleStructuredData article={article} />
@@ -77,7 +135,7 @@ export default function ArticleDetailPage() {
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -110,7 +168,7 @@ export default function ArticleDetailPage() {
               </div>
             </div>
             <ShareButton
-              url={`/artikel/${article.slug}`}
+              url={`/artikel/${articleSlug}`}
               title={article.title}
               description={article.metaDescription}
               variant="outline"
@@ -246,7 +304,7 @@ export default function ArticleDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Recommended Workshops */}
+         {/* Recommended Workshops */}
           {workshops && workshops.length > 0 && (
             <section className="mt-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -263,18 +321,45 @@ export default function ArticleDetailPage() {
                             alt={workshop.name}
                             width={48}
                             height={48}
-                            className="rounded-lg"
+                            className="rounded-lg flex-shrink-0"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 truncate">
                             {workshop.name}
                           </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {workshop.address}
+                          <p className="text-sm text-gray-600 mb-4">
+                            {workshop.city || 'Kota tidak tersedia'}
                           </p>
-                          <div className="mt-2">
-                            <Link href={`/workshop/${workshop.slug}`}>
+                          <div className="flex flex-col gap-2">
+                            {workshop.mobile && (
+                              <a 
+                                href={`https://wa.me/${workshop.mobile.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full"
+                              >
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full gap-2 rounded-lg",
+                                    "transition-all duration-200",
+                                    "focus:outline-none",
+                                    "h-9"
+                                  )}
+                                  style={{
+                                    borderColor: 'rgba(22, 163, 74, 0.4)',
+                                    color: '#16A34A',
+                                    backgroundColor: 'transparent'
+                                  }}
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                  WhatsApp
+                                </Button>
+                              </a>
+                            )}
+                            <Link href={`/workshop/${workshop.slug}`} className="w-full">
                               <Button variant="outline" size="sm" className="w-full">
                                 Lihat Detail
                               </Button>

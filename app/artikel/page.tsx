@@ -80,9 +80,12 @@ export default function ArticlesPage() {
       ) : (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
-            {articles.map((article) => (
+            {articles.map((article) => {
+              const articleSlug = article.slug?.replace(/^seasonal-/, '') || article.slug;
+
+              return (
               <Card key={article.id} className="h-full hover:shadow-xl transition-shadow duration-300 group flex flex-col">
-                <Link href={`/artikel/${article.slug}`} className="flex-1">
+                <Link href={`/artikel/${articleSlug}`} className="flex-1">
                   {/* Image */}
                   {article.imageUrl && (
                     <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
@@ -142,7 +145,7 @@ export default function ArticlesPage() {
                 {/* Share Button */}
                 <div className="px-6 pb-4 border-t pt-4">
                   <ShareButton
-                    url={`/artikel/${article.slug}`}
+                    url={`/artikel/${articleSlug}`}
                     title={article.title}
                     description={article.metaDescription}
                     variant="ghost"
@@ -151,7 +154,8 @@ export default function ArticlesPage() {
                   />
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pagination */}
