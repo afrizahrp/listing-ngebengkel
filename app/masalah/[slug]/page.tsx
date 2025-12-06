@@ -6,7 +6,7 @@ import { usePainPoints } from '@/queryHooks/usePainPoints';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Wrench, AlertTriangle, Settings, Car, Lightbulb, Loader2 } from 'lucide-react';
+import { ArrowLeft, Wrench, AlertTriangle, Settings, Car, Lightbulb, Loader2, Wheel, Wind } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,9 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   MAINTENANCE: Settings,
   BODYWORK: Car,
   ELECTRICAL: Lightbulb,
+  STEERING: Wheel,
+  SUSPENSION: Wind,
+  TIRES: Wheel,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -26,6 +29,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   MAINTENANCE: 'Perawatan',
   BODYWORK: 'Body',
   ELECTRICAL: 'Kelistrikan',
+  STEERING: 'Stir',
+  SUSPENSION: 'Suspensi',
+  TIRES: 'Ban',
 };
 
 export default function PainPointDetailPage() {

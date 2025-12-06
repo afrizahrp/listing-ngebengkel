@@ -10,7 +10,7 @@ import { SYS_ENDPOINTS } from '@/config/endpoints';
 // Types
 // ============================================================================
 
-export type PainPointCategory = 'URGENT' | 'GENERAL' | 'MAINTENANCE' | 'BODYWORK' | 'ELECTRICAL';
+export type PainPointCategory = 'URGENT' | 'GENERAL' | 'MAINTENANCE' | 'BODYWORK' | 'ELECTRICAL' | 'STEERING' | 'SUSPENSION' | 'TIRES';
 
 export type PainPoint = {
   id: string;
