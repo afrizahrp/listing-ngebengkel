@@ -33,13 +33,7 @@ export default function ArticleDetailPage() {
     || (typeof window !== 'undefined' && window.location.origin)
     || 'https://ngebengkel.com';
 
-  const handleBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(baseUrl);
-    }
-  };
+
 
   const { article, workshops, loading, error, fetchArticleBySlug, fetchRecommendedWorkshops } = useArticles();
 
