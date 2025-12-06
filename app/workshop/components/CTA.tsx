@@ -71,13 +71,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const painPointSlug = searchParams?.get('painPoint') || null;
   const cityNameParam = (searchParams?.get('city') || '').trim();
   
-  // Debug: log painPointSlug and searchParams
-  useEffect(() => {
-    console.log('CTA: painPointSlug =', painPointSlug);
-    console.log('CTA: cityNameParam =', cityNameParam);
-    console.log('CTA: searchParams =', searchParams?.toString());
-    console.log('CTA: painPointSlug exists?', !!painPointSlug);
-  }, [painPointSlug, cityNameParam, searchParams]);
   const urlSearchQuery = searchParams?.get('q') || '';
   
   const [page, setPage] = useState(1);
@@ -93,20 +86,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     enabled: Boolean(painPointSlug),
   });
   
-  // Debug: log painPointData
-  useEffect(() => {
-    if (painPointData) {
-      console.log('CTA: painPointData loaded:', {
-        title: painPointData.title,
-        workshopTypes: painPointData.workshopTypes,
-        serviceTypes: painPointData.serviceTypes,
-        keywords: painPointData.keywords,
-      });
-      console.log('CTA: painPointData.workshopTypes length:', painPointData.workshopTypes?.length || 0);
-      console.log('CTA: painPointData.serviceTypes length:', painPointData.serviceTypes?.length || 0);
-      console.log('CTA: painPointData.keywords:', painPointData.keywords);
-    }
-  }, [painPointData]);
   
   // Match search term ke pain point (untuk search bar utama)
   // Send full search term to backend - it will do full-text search
@@ -341,13 +320,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
       const relevantWorkshopTypeNames =
         activePainPoint.workshopTypes?.map((wt: { name: string }) => wt.name.toLowerCase()) || [];
       
-      // Debug logging
-      console.log('CTA: Filtering with pain point:', activePainPoint.title);
-      console.log('CTA: relevantWorkshopTypeNames:', relevantWorkshopTypeNames);
-      console.log('CTA: relevantServiceTypeNames:', relevantServiceTypeNames);
-      console.log('CTA: Total branches before filter:', branches.length);
-      console.log('CTA: Sample branch typeName:', branches[0]?.typeName);
-      
       // Get keywords dari pain point untuk broader matching
       const painPointKeywords = activePainPoint.keywords || [];
       const painPointTitleLower = activePainPoint.title?.toLowerCase() || '';
@@ -412,10 +384,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
         expandedTerms.add('spesialis ac mobil');
       }
       
-      console.log('CTA: expandedTerms:', Array.from(expandedTerms));
-      console.log('CTA: painPointKeywords:', painPointKeywords);
-      console.log('CTA: titleTerms:', titleTerms);
-      
       // Check if this is an AC-related pain point
       const isAcRelated = painPointTitleLower.includes('ac') || 
                          painPointTitleLower.includes('dingin') ||
@@ -449,9 +417,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
                 word === workshopTypeName
               )
             );
-            if (match) {
-              console.log(`CTA: Match found! Branch "${b.name}" (typeName: "${b.typeName}") matches workshopType "${workshopTypeName}"`);
-            }
             return match;
           });
           if (matchesWorkshopType) return true;
@@ -494,9 +459,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
             })
           );
           
-          if (match) {
-            console.log(`CTA: Keyword match! Branch "${b.name}" (typeName: "${b.typeName}") matches keyword "${keyword}"`);
-          }
           return match;
         });
         if (matchesKeywords) return true;
@@ -522,7 +484,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
           if (termLower === 'ac' || termLower.includes('ac') || termLower === 'pendingin' || termLower.includes('pendingin')) {
             // Match jika typeName mengandung "ac" atau "pendingin"
             if (typeNameLower.includes('ac') || typeNameLower.includes('pendingin')) {
-              console.log(`CTA: AC match! Branch "${b.name}" (typeName: "${b.typeName}") matches AC term "${term}"`);
               return true;
             }
           }
@@ -556,9 +517,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
             })
           );
           
-          if (match) {
-            console.log(`CTA: Expanded term match! Branch "${b.name}" (typeName: "${b.typeName}") matches term "${term}"`);
-          }
           return match;
         });
         if (matchesExpandedTerms) return true;
@@ -571,7 +529,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
           // Special case untuk AC: jika title mengandung "ac" atau "dingin", match dengan typeName yang mengandung "ac" atau "pendingin"
           if (painPointTitleLower.includes('ac') || painPointTitleLower.includes('dingin')) {
             if (typeNameLower.includes('ac') || typeNameLower.includes('pendingin') || typeNameLower.includes('spesialis ac')) {
-              console.log(`CTA: AC title match! Branch "${b.name}" (typeName: "${b.typeName}") matches AC title "${painPointTitleLower}"`);
               return true;
             }
           }
@@ -584,9 +541,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
               wordLower.includes(typeNameLower) ||
               wordLower.includes(nameLower)
             );
-            if (match) {
-              console.log(`CTA: Title word match! Branch "${b.name}" (typeName: "${b.typeName}") matches word "${word}"`);
-            }
             return match;
           });
           if (matchesTitleWords) return true;
@@ -595,13 +549,6 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
         return false;
       });
       
-      console.log('CTA: Total branches after filter:', filtered.length);
-      if (filtered.length === 0) {
-        console.log('CTA: No matches found. Sample branches:', branches.slice(0, 3).map(b => ({
-          name: b.name,
-          typeName: b.typeName,
-        })));
-      }
     }
     
     // Apply search filtering (name, city, district, subdistrict)
@@ -766,13 +713,11 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  console.log('Back button clicked, painPointSlug:', painPointSlug);
                   // Remove painPoint parameter and navigate back
                   const newParams = new URLSearchParams(searchParams?.toString() || '');
                   newParams.delete('painPoint');
                   const newQuery = newParams.toString();
                   const newUrl = newQuery ? `/bengkel?${newQuery}` : '/bengkel';
-                  console.log('Navigating to:', newUrl);
                   router.push(newUrl);
                 }}
                 className="inline-flex items-center gap-2 border-2 hover:bg-gray-50"
@@ -843,10 +788,9 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
             <SearchSuggestions
               query={searchTerm}
               onSelect={(slug) => {
-                console.log('CTA: onSelect called with slug:', slug);
+                if (!slug) return;
                 // Langsung navigate ke listing dengan pain point slug
                 const url = `/bengkel?painPoint=${slug}`;
-                console.log('CTA: Navigating to:', url);
                 // Use window.location for more reliable navigation
                 window.location.href = url;
                 setSuggestionsOpen(false);
