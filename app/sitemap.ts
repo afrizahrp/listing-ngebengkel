@@ -35,7 +35,6 @@ async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: st
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      cache: 'force-cache', // Cache location data
       next: { revalidate: 86400 }, // 24 hours
     });
 
@@ -215,7 +214,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    // Process pain points
+    // Process pain points - these use /masalah/ route
+    const painPointSlugs = new Set<string>();
     if (painPointsRes.status === 'fulfilled' && painPointsRes.value.ok) {
       const painPointsData = (await painPointsRes.value.json()) as {
         data?: Array<{ slug: string; updatedAt?: string }>;
@@ -228,23 +228,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       for (const painPoint of painPoints) {
         if (painPoint.slug) {
+          painPointSlugs.add(painPoint.slug);
           routes.push({
             url: `${baseUrl}/masalah/${encodeURIComponent(painPoint.slug)}`,
             lastModified: painPoint.updatedAt ? new Date(painPoint.updatedAt) : new Date(),
-            changeFrequency: 'monthly', // Changed from weekly - pain points don't update often
-            priority: 0.6,
+            changeFrequency: 'weekly',
+            priority: 0.8,
           });
         }
       }
     }
 
+    // Add artikel listing page
+    routes.push({
+      url: `${baseUrl}/artikel`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    });
+
     // Process published articles
+    // Articles that match pain point slugs are excluded (they're already in /masalah/)
     if (articlesRes.status === 'fulfilled' && articlesRes.value.ok) {
       const articlesData = (await articlesRes.value.json()) as {
-        data?: Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
-      } | Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
+        data?: Array<{ slug: string; publishedAt?: string; updatedAt?: string; painPoint?: { slug?: string } }>;
+      } | Array<{ slug: string; publishedAt?: string; updatedAt?: string; painPoint?: { slug?: string } }>;
       
-      const articles: Array<{ slug: string; publishedAt?: string; updatedAt?: string }> = Array.isArray(articlesData)
+      const articles: Array<{ slug: string; publishedAt?: string; updatedAt?: string; painPoint?: { slug?: string } }> = Array.isArray(articlesData)
         ? articlesData
         : Array.isArray(articlesData?.data)
           ? articlesData.data
@@ -252,11 +262,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       for (const article of articles) {
         if (article.slug) {
+          // Skip if this article's slug matches a pain point slug
+          // (it will be accessible via /masalah/ route instead)
+          if (painPointSlugs.has(article.slug)) {
+            continue;
+          }
+
+          // Add as /artikel/ for seasonal or standalone articles
           routes.push({
             url: `${baseUrl}/artikel/${encodeURIComponent(article.slug)}`,
             lastModified: article.publishedAt ? new Date(article.publishedAt) : article.updatedAt ? new Date(article.updatedAt) : new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.8,
+            changeFrequency: 'weekly',
+            priority: 0.7,
           });
         }
       }

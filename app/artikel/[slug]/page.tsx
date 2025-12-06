@@ -29,11 +29,6 @@ export default function ArticleDetailPage() {
   const router = useRouter();
   const rawSlug = (params?.slug as string) || '';
   const slug = rawSlug.replace(/^seasonal-/, '');
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    || (typeof window !== 'undefined' && window.location.origin)
-    || 'https://ngebengkel.com';
-
-
 
   const { article, workshops, loading, error, fetchArticleBySlug, fetchRecommendedWorkshops } = useArticles();
 
