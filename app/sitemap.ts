@@ -17,7 +17,16 @@ type WaitingListItem = {
   workshopTypes?: Array<{ id: string; name: string }>;
 };
 
+// Cache for location lookups to reduce API calls
+const locationCache = new Map<string, string | null>();
+
 async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: string): Promise<string | null> {
+  const cacheKey = `${type}:${id}`;
+  
+  if (locationCache.has(cacheKey)) {
+    return locationCache.get(cacheKey)!;
+  }
+
   try {
     const token = await getServiceTokenWithRefresh();
     const endpoint = type === 'city' ? 'sys_city' : type === 'district' ? 'sys_district' : 'sys_subdistrict';
@@ -26,16 +35,21 @@ async function getLocationName(type: 'city' | 'district' | 'subdistrict', id: st
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      cache: 'no-store',
+      cache: 'force-cache', // Cache location data
+      next: { revalidate: 86400 }, // 24 hours
     });
 
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
       const location = data?.data || data;
-      return location?.name || null;
+      const name = location?.name || null;
+      locationCache.set(cacheKey, name);
+      return name;
     }
+    locationCache.set(cacheKey, null);
     return null;
   } catch {
+    locationCache.set(cacheKey, null);
     return null;
   }
 }
@@ -54,19 +68,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Tambahkan halaman detail workshop dan lokasi dari daftar WL
   try {
     const token = await getServiceTokenWithRefresh();
-    const res = await fetch(`${apiBase}/waiting-list`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
+    
+    // Fetch all data in parallel for better performance
+    const [waitingListRes, painPointsRes, articlesRes] = await Promise.allSettled([
+      fetch(`${apiBase}/waiting-list`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        next: { revalidate: 3600 }, // 1 hour cache
+      }),
+      fetch(`${apiBase}/pain-points?isActive=true&limit=1000`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        next: { revalidate: 3600 },
+      }),
+      fetch(`${apiBase}/wks/articles?status=PUBLISHED&limit=1000`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        next: { revalidate: 3600 },
+      }),
+    ]);
 
-    if (res.ok) {
-      const data = (await res.json()) as {
+    // Process waiting list (workshops & locations)
+    if (waitingListRes.status === 'fulfilled' && waitingListRes.value.ok) {
+      const data = (await waitingListRes.value.json()) as {
         data?: WaitingListItem[];
       } | WaitingListItem[];
       const items: WaitingListItem[] = Array.isArray(data)
@@ -75,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           ? data.data
           : [];
 
-      // Track unique locations untuk menghindari duplikasi
+      // Track unique locations to avoid duplicates
       const citySlugs = new Set<string>();
       const districtSlugs = new Set<string>();
       const subdistrictSlugs = new Set<string>();
@@ -92,7 +124,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.7,
         });
 
-        // Add location pages (city, district, subdistrict)
+        // Add location pages
         if (item.city) {
           const cityName = await getLocationName('city', item.city);
           if (cityName) {
@@ -107,7 +139,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               });
             }
 
-            // Add district page if available
+            // District pages
             if (item.district) {
               const districtName = await getLocationName('district', item.district);
               if (districtName) {
@@ -123,7 +155,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                   });
                 }
 
-                // Add subdistrict page if available
+                // Subdistrict pages
                 if (item.subdistrict) {
                   const subdistrictName = await getLocationName('subdistrict', item.subdistrict);
                   if (subdistrictName) {
@@ -141,11 +173,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                   }
                 }
 
-                // Add type + city + district pages
-                if (item.workshopTypes && Array.isArray(item.workshopTypes) && item.workshopTypes.length > 0) {
-                  const workshopType = item.workshopTypes[0];
-                  if (workshopType?.id && workshopType?.name) {
-                    const typeSlug = createSlug(workshopType.name);
+                // Type + city + district pages
+                if (item.workshopTypes?.[0]) {
+                  const { name } = item.workshopTypes[0];
+                  if (name) {
+                    const typeSlug = createSlug(name);
                     const typeCityDistrictKey = `${typeSlug}/${citySlug}/${districtSlug}`;
                     if (!typeCityDistrictSlugs.has(typeCityDistrictKey)) {
                       typeCityDistrictSlugs.add(typeCityDistrictKey);
@@ -161,11 +193,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               }
             }
 
-            // Add type + city pages
-            if (item.workshopTypes && Array.isArray(item.workshopTypes) && item.workshopTypes.length > 0) {
-              const workshopType = item.workshopTypes[0];
-              if (workshopType?.id && workshopType?.name) {
-                const typeSlug = createSlug(workshopType.name);
+            // Type + city pages
+            if (item.workshopTypes?.[0]) {
+              const { name } = item.workshopTypes[0];
+              if (name) {
+                const typeSlug = createSlug(name);
                 const typeCityKey = `${typeSlug}/${citySlug}`;
                 if (!typeCitySlugs.has(typeCityKey)) {
                   typeCitySlugs.add(typeCityKey);
@@ -182,24 +214,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
-  } catch (error) {
-    console.error('Error generating sitemap:', error);
-    // Abaikan error agar sitemap tetap ter-generate minimal untuk halaman utama
-  }
 
-  // Tambahkan pain points ke sitemap
-  try {
-    const token = await getServiceTokenWithRefresh();
-    const painPointsRes = await fetch(`${apiBase}/pain-points?isActive=true&limit=1000`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (painPointsRes.ok) {
-      const painPointsData = (await painPointsRes.json()) as {
+    // Process pain points
+    if (painPointsRes.status === 'fulfilled' && painPointsRes.value.ok) {
+      const painPointsData = (await painPointsRes.value.json()) as {
         data?: Array<{ slug: string; updatedAt?: string }>;
       } | Array<{ slug: string; updatedAt?: string }>;
       const painPoints: Array<{ slug: string; updatedAt?: string }> = Array.isArray(painPointsData)
@@ -213,32 +231,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           routes.push({
             url: `${baseUrl}/masalah/${encodeURIComponent(painPoint.slug)}`,
             lastModified: painPoint.updatedAt ? new Date(painPoint.updatedAt) : new Date(),
-            changeFrequency: 'weekly',
+            changeFrequency: 'monthly', // Changed from weekly - pain points don't update often
             priority: 0.6,
           });
         }
       }
     }
-  } catch (error) {
-    console.error('Error generating pain points sitemap:', error);
-    // Abaikan error agar sitemap tetap ter-generate
-  }
 
-  // Tambahkan published articles ke sitemap
-  try {
-    const token = await getServiceTokenWithRefresh();
-    const articlesRes = await fetch(`${apiBase}/wks/articles?status=PUBLISHED&limit=1000`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (articlesRes.ok) {
-      const articlesData = (await articlesRes.json()) as {
+    // Process published articles
+    if (articlesRes.status === 'fulfilled' && articlesRes.value.ok) {
+      const articlesData = (await articlesRes.value.json()) as {
         data?: Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
-        pagination?: { total: number };
       } | Array<{ slug: string; publishedAt?: string; updatedAt?: string }>;
       
       const articles: Array<{ slug: string; publishedAt?: string; updatedAt?: string }> = Array.isArray(articlesData)
@@ -258,12 +261,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
+
   } catch (error) {
-    console.error('Error generating articles sitemap:', error);
-    // Abaikan error agar sitemap tetap ter-generate
+    console.error('Error generating sitemap:', error);
+    // Sitemap still generates with at least homepage
   }
 
   return routes;
 }
-
-
