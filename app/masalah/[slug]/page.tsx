@@ -6,7 +6,7 @@ import { usePainPoints } from '@/queryHooks/usePainPoints';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Wrench, AlertTriangle, Settings, Car, Lightbulb, Loader2, Wheel, Wind } from 'lucide-react';
+import { ArrowLeft, Wrench, AlertTriangle, Settings, Car, Lightbulb, Loader2, Circle, Wind } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -18,9 +18,9 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   MAINTENANCE: Settings,
   BODYWORK: Car,
   ELECTRICAL: Lightbulb,
-  STEERING: Wheel,
+  STEERING: Circle,
   SUSPENSION: Wind,
-  TIRES: Wheel,
+  TIRES: Circle,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
