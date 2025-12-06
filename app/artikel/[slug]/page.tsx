@@ -6,7 +6,7 @@ import { useArticles } from '@/queryHooks/useArticles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench, Star, MapPin } from 'lucide-react';
+import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArticleStructuredData } from './components/ArticleStructuredData';
