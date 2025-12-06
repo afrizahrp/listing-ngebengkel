@@ -19,6 +19,7 @@ interface ArticleContent {
 interface Article {
   id: string;
   slug: string;
+  painPoint_id: string;
   title: string;
   metaTitle: string;
   metaDescription: string;
@@ -26,7 +27,11 @@ interface Article {
   imageUrl: string;
   publishedAt: string | null;
   generatedAt: string;
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  viewCount?: number;
   painPoint?: {
+    id: string;
+    slug: string;
     title: string;
     category: string;
   };

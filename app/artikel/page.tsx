@@ -7,6 +7,7 @@ import { useArticles } from '@/queryHooks/useArticles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
+import { ShareButton } from '@/components/ui/share-button';
 import { Eye, Calendar, ArrowRight } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -80,8 +81,8 @@ export default function ArticlesPage() {
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
             {articles.map((article) => (
-              <Link key={article.id} href={`/artikel/${article.slug}`}>
-                <Card className="h-full hover:shadow-xl transition-shadow duration-300 cursor-pointer group">
+              <Card key={article.id} className="h-full hover:shadow-xl transition-shadow duration-300 group flex flex-col">
+                <Link href={`/artikel/${article.slug}`} className="flex-1">
                   {/* Image */}
                   {article.imageUrl && (
                     <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
@@ -136,8 +137,20 @@ export default function ArticlesPage() {
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </CardContent>
-                </Card>
-              </Link>
+                </Link>
+                
+                {/* Share Button */}
+                <div className="px-6 pb-4 border-t pt-4">
+                  <ShareButton
+                    url={`/artikel/${article.slug}`}
+                    title={article.title}
+                    description={article.metaDescription}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
+              </Card>
             ))}
           </div>
 

@@ -54,6 +54,7 @@ type UseArticlesReturn = {
   article: Article | null;
   workshops: RecommendedWorkshop[];
   loading: boolean;
+  workshopsLoading: boolean;
   error: string | null;
   fetchArticles: (params?: { page?: number; limit?: number; status?: 'PUBLISHED' }) => Promise<ArticleListResponse>;
   fetchArticleBySlug: (slug: string) => Promise<Article>;
@@ -66,6 +67,7 @@ export const useArticles = (): UseArticlesReturn => {
   const [article, setArticle] = useState<Article | null>(null);
   const [workshops, setWorkshops] = useState<RecommendedWorkshop[]>([]);
   const [loading, setLoading] = useState(false);
+  const [workshopsLoading, setWorkshopsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchArticles = useCallback(async (params?: { page?: number; limit?: number; status?: 'PUBLISHED' }) => {
@@ -110,13 +112,10 @@ export const useArticles = (): UseArticlesReturn => {
 
   const fetchRecommendedWorkshops = useCallback(async (articleId: string) => {
     if (!articleId) {
-      const message = 'ID artikel wajib diisi.';
-      setError(message);
-      throw new Error(message);
+      throw new Error('ID artikel wajib diisi.');
     }
 
-    setLoading(true);
-    setError(null);
+    setWorkshopsLoading(true);
 
     try {
       const { data } = await sysApi.get<RecommendedWorkshop[]>(SYS_ENDPOINTS.articles.recommendedWorkshops(articleId));
@@ -124,10 +123,11 @@ export const useArticles = (): UseArticlesReturn => {
       return data;
     } catch (err) {
       const message = extractErrorMessage(err, 'Gagal memuat rekomendasi bengkel.');
-      setError(message);
-      throw new Error(message);
+      // Don't set error for workshops - it's optional content
+      console.error('[fetchRecommendedWorkshops]', message);
+      return [];
     } finally {
-      setLoading(false);
+      setWorkshopsLoading(false);
     }
   }, []);
 
@@ -143,6 +143,7 @@ export const useArticles = (): UseArticlesReturn => {
     article,
     workshops,
     loading,
+    workshopsLoading,
     error,
     fetchArticles,
     fetchArticleBySlug,

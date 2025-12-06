@@ -2,13 +2,16 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import * as React from 'react';
 import { useArticles } from '@/queryHooks/useArticles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench } from 'lucide-react';
+import { ShareButton } from '@/components/ui/share-button';
+import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench, MessageCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { ArticleStructuredData } from './components/ArticleStructuredData';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -25,9 +28,11 @@ export default function ArticleDetailPage() {
   const slug = params?.slug as string;
 
   const { article, workshops, loading, error, fetchArticleBySlug, fetchRecommendedWorkshops } = useArticles();
+  const [hasAttemptedFetch, setHasAttemptedFetch] = React.useState(false);
 
   useEffect(() => {
     if (slug) {
+      setHasAttemptedFetch(true);
       fetchArticleBySlug(slug).then((articleData) => {
         if (articleData?.id) {
           fetchRecommendedWorkshops(articleData.id);
@@ -43,29 +48,76 @@ export default function ArticleDetailPage() {
   if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
+        <div className="space-y-6">
+          {/* Skeleton loader for better perceived performance */}
+          <div className="animate-pulse space-y-4">
+            {/* Title skeleton */}
+            <div className="h-10 bg-gray-200 rounded w-3/4"></div>
+            {/* Meta info skeleton */}
+            <div className="flex gap-4">
+              <div className="h-6 bg-gray-200 rounded w-32"></div>
+              <div className="h-6 bg-gray-200 rounded w-32"></div>
+            </div>
+            {/* Image skeleton */}
+            <div className="relative w-full h-[400px] rounded-lg bg-gray-200"></div>
+            {/* Content skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            </div>
+          </div>
         </div>
       </main>
     );
   }
 
-  if (error || !article) {
+  if (error || (hasAttemptedFetch && !article && !loading)) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Artikel Tidak Ditemukan</h1>
           <p className="text-gray-600 mb-6">
             Artikel yang Anda cari tidak tersedia atau sudah dihapus
           </p>
-          <Button onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
+          <div className="space-y-3">
+            <Button onClick={() => router.back()} className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Kembali
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/artikel')} className="w-full">
+              Lihat Semua Artikel
+            </Button>
+          </div>
         </Card>
       </main>
     );
+  }
+
+  // Type guard: at this point article is guaranteed to be not null
+  if (!article) {
+    return null;
   }
 
   return (
@@ -85,27 +137,36 @@ export default function ArticleDetailPage() {
 
         {/* Article Header */}
         <article className="space-y-6">
-          {/* Meta Info */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            {article.painPoint?.category && (
-              <Badge className={CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100'}>
-                {article.painPoint.category}
-              </Badge>
-            )}
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {new Date(article.publishedAt || article.generatedAt).toLocaleDateString('id-ID', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+          {/* Meta Info & Share Button */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              {article.painPoint?.category && (
+                <Badge className={CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100'}>
+                  {article.painPoint.category}
+                </Badge>
+              )}
+              <div className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {new Date(article.publishedAt || article.generatedAt).toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                <span>{article.viewCount || 0} views</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              <span>{article.viewCount || 0} views</span>
-            </div>
+            <ShareButton
+              url={`/artikel/${article.slug}`}
+              title={article.title}
+              description={article.metaDescription}
+              variant="outline"
+              size="default"
+            />
           </div>
 
           {/* Title */}
@@ -244,9 +305,9 @@ export default function ArticleDetailPage() {
               </h2>
               <div className="grid gap-4 md:grid-cols-2">
                 {workshops.slice(0, 6).map((workshop) => (
-                  <Card key={workshop.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
+                  <Card key={workshop.id} className="hover:shadow-lg transition-shadow flex flex-col">
+                    <CardContent className="p-4 flex-1 flex flex-col">
+                      <div className="flex items-start gap-3 flex-1">
                         {workshop.logo && (
                           <Image
                             src={workshop.logo}
@@ -260,17 +321,48 @@ export default function ArticleDetailPage() {
                           <h3 className="font-semibold text-gray-900 truncate">
                             {workshop.name}
                           </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {workshop.address}
-                          </p>
-                          <div className="mt-2">
-                            <Link href={`/workshop/${workshop.slug}`}>
-                              <Button variant="outline" size="sm" className="w-full">
-                                Lihat Detail
-                              </Button>
-                            </Link>
-                          </div>
+                          {workshop.city && (
+                            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                              <span>📍</span>
+                              <span>{workshop.city}</span>
+                            </p>
+                          )}
                         </div>
+                      </div>
+                      
+                      <div className="mt-4 space-y-2">
+                        {workshop.phone && (
+                          <a
+                            href={`https://wa.me/${workshop.phone.replace(/[^0-9]/g, '').startsWith('0') ? '62' + workshop.phone.replace(/[^0-9]/g, '').slice(1) : workshop.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <Button
+                              variant="outline"
+                              size="default"
+                              className={cn(
+                                "w-full gap-2 rounded-lg",
+                                "transition-all duration-200",
+                                "focus:outline-none",
+                                "h-10"
+                              )}
+                              style={{
+                                borderColor: 'rgba(22, 163, 74, 0.4)',
+                                color: '#16A34A',
+                                backgroundColor: 'transparent'
+                              }}
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              WhatsApp
+                            </Button>
+                          </a>
+                        )}
+                        <Link href={`/workshop/${workshop.slug}`} className="block">
+                          <Button variant="outline" size="sm" className="w-full">
+                            Lihat Detail
+                          </Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>
@@ -279,7 +371,7 @@ export default function ArticleDetailPage() {
               <div className="mt-6 text-center">
                 <Link href={`/bengkel?painPoint=${article.painPoint?.slug}`}>
                   <Button size="lg">
-                    Lihat Semua Bengkel untuk {article.painPoint?.title}
+                    Lihat Semua Bengkel {article.painPoint?.title}
                   </Button>
                 </Link>
               </div>
