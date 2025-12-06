@@ -66,6 +66,15 @@ async function getServiceToken(): Promise<string | null> {
 }
 
 export async function middleware(request: NextRequest) {
+  // ===== WWW to non-WWW redirect =====
+  const hostname = request.headers.get('host') || '';
+  if (hostname.startsWith('www.')) {
+    const newUrl = new URL(request.url);
+    newUrl.host = hostname.replace('www.', '');
+    return NextResponse.redirect(newUrl, { status: 301 });
+  }
+  // ===== End WWW redirect =====
+
   const { pathname } = request.nextUrl;
 
   // Hanya handle route workshop/[slug] yang terlihat seperti ID
@@ -129,6 +138,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/workshop/:path*',
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
-
