@@ -88,7 +88,7 @@ export const metadata: Metadata = {
   verification: {
     // Hanya masukkan verification code saja, tanpa prefix "google-site-verification="
     // Next.js akan otomatis menambahkan prefix ke meta tag
-    google: 'kDq-qfEa-I1RlrzQE4xTZaPzJlncPlFoGG22jKbXgc',// for ngebengkel.com
+    google: '-kDq-qfEa-I1RlrzQE4xTZaPzJlncPlFoGG22jKbXgc',// for ngebengkel.com
     
     // google: '-kDq-qfEa-I1RlrzQE4xTZaPzJlncPlFoGG22jKbXgc', // for www.ngebengkel.com
     // Add verification codes here when available
