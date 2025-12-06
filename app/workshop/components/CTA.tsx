@@ -69,13 +69,15 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const painPointSlug = searchParams?.get('painPoint') || null;
+  const cityNameParam = (searchParams?.get('city') || '').trim();
   
   // Debug: log painPointSlug and searchParams
   useEffect(() => {
     console.log('CTA: painPointSlug =', painPointSlug);
+    console.log('CTA: cityNameParam =', cityNameParam);
     console.log('CTA: searchParams =', searchParams?.toString());
     console.log('CTA: painPointSlug exists?', !!painPointSlug);
-  }, [painPointSlug, searchParams]);
+  }, [painPointSlug, cityNameParam, searchParams]);
   const urlSearchQuery = searchParams?.get('q') || '';
   
   const [page, setPage] = useState(1);
@@ -107,10 +109,11 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   }, [painPointData]);
   
   // Match search term ke pain point (untuk search bar utama)
+  // Send full search term to backend - it will do full-text search
   const { data: matchedPainPoint } = useMatchPainPoint({
     query: debouncedSearchTerm || '',
     debounceMs: 300,
-    enabled: (debouncedSearchTerm || '').trim().length > 0 && !painPointSlug, // Hanya jika tidak ada painPoint di URL
+    enabled: (debouncedSearchTerm || '').trim().length > 2 && !painPointSlug, // Hanya jika tidak ada painPoint di URL
   });
   
   // Check if search term is only "promo" keyword
@@ -307,6 +310,15 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   // Filtering: handle location-based search (city, district, subdistrict), promo keyword, and pain point
   const filteredBranches: ExtendedBranch[] = useMemo(() => {
     let filtered = branches;
+    
+    // Filter by city name if provided in URL query param
+    if (cityNameParam) {
+      filtered = filtered.filter((b) => {
+        const branchCity = b.city?.trim().toLowerCase();
+        const targetCity = cityNameParam.toLowerCase();
+        return branchCity === targetCity;
+      });
+    }
     
     // Determine which pain point to use: URL parameter OR matched from search
     const activePainPoint = painPointSlug && painPointData 
@@ -593,17 +605,37 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     }
     
     // Apply search filtering (name, city, district, subdistrict)
+    // Only apply text search filtering if pain point was successfully matched
+    // Otherwise, show all results (pain point keywords will be used for matching if available)
     const searchLower = searchWithoutPromo.toLowerCase().trim();
-    if (searchLower.length > 0 && !isOnlyPromoKeyword) {
-      filtered = filtered.filter((b) => {
-        // Check if search term matches name, city, district, or subdistrict
-        const nameMatch = b.name?.toLowerCase().includes(searchLower) ?? false;
-        const cityMatch = b.city?.toLowerCase().includes(searchLower) ?? false;
-        const districtMatch = b.district?.toLowerCase().includes(searchLower) ?? false;
-        const subdistrictMatch = (b as ExtendedBranch & { subdistrict?: string | null }).subdistrict?.toLowerCase().includes(searchLower) ?? false;
-        
-        return nameMatch || cityMatch || districtMatch || subdistrictMatch;
+    
+    // Only do text-based filtering if:
+    // 1. There's no pain point being filtered, AND
+    // 2. Search term is provided, AND
+    // 3. It's not just the promo keyword
+    if (!activePainPoint && searchLower.length > 0 && !isOnlyPromoKeyword) {
+      // Text search only applies to location fields, not to service types
+      // So only filter if search contains actual location keywords
+      const locationKeywords = searchLower.split(/\s+/);
+      const hasLocationKeyword = locationKeywords.some(keyword => {
+        // These are common location keywords - if search contains these, do location filtering
+        const locationIndicators = ['jakarta', 'bandung', 'surabaya', 'utara', 'selatan', 'timur', 'barat', 'pusat', 'tengah', 'jalan', 'jl', 'kota', 'kec', 'kel', 'desa'];
+        return locationIndicators.some(indicator => keyword.includes(indicator) || indicator.includes(keyword));
       });
+      
+      // Only apply location filtering if search seems to contain location terms
+      if (hasLocationKeyword) {
+        filtered = filtered.filter((b) => {
+          const nameMatch = b.name?.toLowerCase().includes(searchLower) ?? false;
+          const cityMatch = b.city?.toLowerCase().includes(searchLower) ?? false;
+          const districtMatch = b.district?.toLowerCase().includes(searchLower) ?? false;
+          const subdistrictMatch = (b as ExtendedBranch & { subdistrict?: string | null }).subdistrict?.toLowerCase().includes(searchLower) ?? false;
+          
+          return nameMatch || cityMatch || districtMatch || subdistrictMatch;
+        });
+      }
+      // If search doesn't seem to contain location keywords, don't filter - just show all
+      // (user might be typing service keywords that didn't match any pain point)
     }
     
     // If search term contains "promo", filter by promo in frontend
@@ -663,7 +695,7 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
     
     // Gabungkan: promo linked di atas (selalu A-Z), regular di bawah (sesuai sort option)
     return [...promoLinked, ...regular];
-  }, [branches, hasPromoKeyword, isOnlyPromoKeyword, searchWithoutPromo, sortOption, painPointSlug, painPointData, matchedPainPoint]);
+  }, [branches, cityNameParam, hasPromoKeyword, isOnlyPromoKeyword, searchWithoutPromo, sortOption, painPointSlug, painPointData, matchedPainPoint]);
   
   // Paginate filtered results in frontend (when searching or filtering by pain point)
   // When not filtering, use backend pagination
