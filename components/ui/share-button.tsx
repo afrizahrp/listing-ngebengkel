@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Check, Facebook, X, Link as LinkIcon, MessageCircle, Send } from 'lucide-react';
+import { Share2, Check, Facebook, Twitter, Link as LinkIcon, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -98,11 +98,11 @@ export function ShareButton({
           Facebook
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleShare('twitter')}>
-          <X className="mr-2 h-4 w-4" />
+          <Twitter className="mr-2 h-4 w-4" />
           Twitter
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
-          <MessageCircle className="mr-2 h-4 w-4" />
+          <Send className="mr-2 h-4 w-4" />
           WhatsApp
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleShare('telegram')}>
