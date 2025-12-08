@@ -345,31 +345,55 @@ export default function ArticleDetailPage() {
                           </p>
                           <div className="flex flex-col gap-2">
                             {workshop.mobile && (
-                              <a 
-                                href={`https://wa.me/${workshop.mobile.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full"
-                              >
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full gap-2 rounded-lg",
-                                    "transition-all duration-200",
-                                    "focus:outline-none",
-                                    "h-9"
-                                  )}
-                                  style={{
-                                    borderColor: 'rgba(22, 163, 74, 0.4)',
-                                    color: '#16A34A',
-                                    backgroundColor: 'transparent'
-                                  }}
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                  WhatsApp
-                                </Button>
-                              </a>
+                              <>
+                                {workshop.claimStatus === 'CLAIMED' ? (
+                                  <a 
+                                    href={`https://wa.me/${workshop.mobile.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full"
+                                  >
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      className={cn(
+                                        "w-full gap-2 rounded-lg",
+                                        "transition-all duration-200",
+                                        "focus:outline-none",
+                                        "h-9"
+                                      )}
+                                      style={{
+                                        borderColor: 'rgba(22, 163, 74, 0.4)',
+                                        color: '#16A34A',
+                                        backgroundColor: 'transparent'
+                                      }}
+                                    >
+                                      <MessageCircle className="h-4 w-4" />
+                                      WhatsApp
+                                    </Button>
+                                  </a>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full gap-2 rounded-lg",
+                                      "transition-all duration-200",
+                                      "focus:outline-none",
+                                      "h-9 opacity-50 cursor-not-allowed"
+                                    )}
+                                    style={{
+                                      borderColor: 'rgba(22, 163, 74, 0.4)',
+                                      color: '#16A34A',
+                                      backgroundColor: 'transparent'
+                                    }}
+                                    disabled
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                    WhatsApp
+                                  </Button>
+                                )}
+                              </>
                             )}
                             <Link href={`/workshop/${workshop.slug}`} className="w-full">
                               <Button variant="outline" size="sm" className="w-full">

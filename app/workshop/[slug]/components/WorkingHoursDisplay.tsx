@@ -180,6 +180,12 @@ export function WorkingHoursDisplay({ waitingListId }: WorkingHoursDisplayProps)
             );
           })}
         </div>
+
+        <div className="text-xs text-muted-foreground pt-2 border-t space-y-0.5">
+          <p>Jam operasional bersifat referensi.</p>
+          <p>Sumber: Google Business Profile (salinan manual),</p>
+           <p>belum diverifikasi pemilik.</p>
+        </div>
       </CardContent>
     </Card>
   );

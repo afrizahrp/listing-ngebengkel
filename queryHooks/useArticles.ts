@@ -47,6 +47,7 @@ interface RecommendedWorkshop {
   rating: number;
   phone: string;
   mobile: string;
+  claimStatus?: string;
 }
 
 type UseArticlesReturn = {

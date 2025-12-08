@@ -524,9 +524,13 @@ export default function WorkshopDetailPage() {
                     <Phone className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Telepon</p>
-                      <a href={`tel:${data.phone}`} className="text-sm text-primary hover:underline">
-                        {data.phone}
-                      </a>
+                      {data.claimStatus === 'CLAIMED' ? (
+                        <a href={`tel:${data.phone}`} className="text-sm text-primary hover:underline">
+                          {data.phone}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">••• ••• ••••</span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -535,7 +539,7 @@ export default function WorkshopDetailPage() {
                     <MessageCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Mobile / WhatsApp</p>
-                      {whatsappUrl ? (
+                      {data.claimStatus === 'CLAIMED' && whatsappUrl ? (
                         <a
                           href={whatsappUrl}
                           target="_blank"
@@ -545,7 +549,7 @@ export default function WorkshopDetailPage() {
                           {data.mobile}
                         </a>
                       ) : (
-                        <span className="text-sm text-muted-foreground">{data.mobile}</span>
+                        <span className="text-sm text-muted-foreground">••• ••• ••••</span>
                       )}
                     </div>
                   </div>
