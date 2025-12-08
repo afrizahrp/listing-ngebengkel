@@ -107,12 +107,9 @@ export function CTA({ variant = 'section' }: { variant?: CTAVariant }) {
   // If filtering by pain point, also use frontend pagination
   const needsFrontendPagination = hasSearchTerm || Boolean(painPointSlug);
   
-  // If search term is provided, we'll do filtering in frontend (including location-based search)
-  // So we don't send searchTerm to backend to allow location filtering
-  // Only send to backend if we want to filter by name only (for performance with large datasets)
-  // For now, we'll do all filtering in frontend to support location search
-  const backendSearchTerm = undefined; // Don't send to backend, filter in frontend instead
-  const searchBy = undefined;
+  // Send name query to backend so name search works, but skip when filtering by painPoint
+  const backendSearchTerm = !painPointSlug && searchWithoutPromo.length > 0 ? searchWithoutPromo : undefined;
+  const searchBy = backendSearchTerm ? 'name' : undefined;
   
   // Use larger limit when searching or filtering by pain point to get more data for frontend filtering
   // When no search term or pain point, use normal pagination from backend
