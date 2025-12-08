@@ -54,6 +54,7 @@ export type PainPointDetail = PainPoint & {
     slug: string;
     category: string;
   }>;
+  articles?: Array<{ id: string;slug:string; status: string }>;
 };
 
 export type PainPointSearchResult = {

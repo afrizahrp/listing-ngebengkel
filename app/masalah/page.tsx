@@ -9,9 +9,11 @@ import {
   Car,
   Lightbulb,
   AlertTriangle,
+  Circle,
   Settings,
   Loader2,
   Search,
+  SquareParkingIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -24,6 +26,8 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   MAINTENANCE: Settings,
   BODYWORK: Car,
   ELECTRICAL: Lightbulb,
+  STEER: Circle,
+  SUSPENSION: SquareParkingIcon
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -32,6 +36,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   MAINTENANCE: 'Perawatan',
   BODYWORK: 'Body',
   ELECTRICAL: 'Kelistrikan',
+  STEER: 'Setir',
+  SUSPENSION: 'Suspensi',
 };
 
 export default function PainPointsListPage() {
