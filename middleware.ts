@@ -7,16 +7,12 @@ const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 
 /**
  * Deteksi apakah string adalah format ID (CUID)
- * CUID biasanya 21-25 karakter, hanya alphanumeric lowercase
  */
 function isLikelyId(value: string): boolean {
   const trimmed = value.trim();
-  // CUID biasanya 21-25 karakter, hanya alphanumeric
-  // Tidak mengandung dash atau karakter khusus
   if (trimmed.length < 20 || trimmed.length > 30) {
     return false;
   }
-  // CUID hanya mengandung alphanumeric lowercase
   return /^[a-z0-9]+$/.test(trimmed) && !trimmed.includes('-');
 }
 
@@ -70,7 +66,7 @@ async function getServiceToken(): Promise<string | null> {
  */
 async function isPainPointSlug(slug: string): Promise<boolean> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3200';
     const response = await fetch(`${apiUrl}/api/pain-points/${slug}`, {
       method: 'HEAD',
       cache: 'no-store',
@@ -83,83 +79,75 @@ async function isPainPointSlug(slug: string): Promise<boolean> {
 }
 
 export async function middleware(request: NextRequest) {
-  // ===== WWW to non-WWW redirect =====
-  const hostname = request.headers.get('host') || '';
-  if (hostname.startsWith('www.')) {
-    const newUrl = new URL(request.url);
-    newUrl.host = hostname.replace('www.', '');
-    return NextResponse.redirect(newUrl, { status: 301 });
+  const requestHeaders = new Headers(request.headers);
+
+  // Ambil protocol dan host yang benar dari proxy (Nginx)
+  const proto = requestHeaders.get('x-forwarded-proto') || 'https';
+  const host = requestHeaders.get('host') || 'ngebengkel.com';
+
+  const { pathname, search } = request.nextUrl;
+
+  // ===== WWW → non-WWW redirect =====
+  if (host.startsWith('www.')) {
+    const newHost = host.replace('www.', '');
+    const redirectUrl = `${proto}://${newHost}${pathname}${search}`;
+    return NextResponse.redirect(redirectUrl, 301);
   }
-  // ===== End WWW redirect =====
 
-  const { pathname } = request.nextUrl;
-
-  // ===== Redirect /artikel/{slug} to /masalah/{slug} if pain point exists =====
+  // ===== Redirect /artikel/{slug} → /masalah/{slug} jika pain point ada =====
   if (pathname.startsWith('/artikel/')) {
     const slug = pathname.replace('/artikel/', '').split('/')[0].replace(/^seasonal-/, '');
     
     if (slug && await isPainPointSlug(slug)) {
-      const newUrl = new URL(`/masalah/${slug}`, request.url);
-      return NextResponse.redirect(newUrl, { status: 301 });
+      const redirectUrl = `${proto}://${host}/masalah/${slug}`;
+      return NextResponse.redirect(redirectUrl, 301);
     }
   }
-  // ===== End artikel redirect =====
 
-  // Hanya handle route workshop/[slug] yang terlihat seperti ID
+  // ===== Workshop ID → slug redirect =====
   const workshopMatch = pathname.match(/^\/workshop\/([^/]+)$/);
-  if (!workshopMatch) {
-    return NextResponse.next();
-  }
+  if (workshopMatch) {
+    const slugOrId = workshopMatch[1];
 
-  const slugOrId = workshopMatch[1];
+    if (isLikelyId(slugOrId)) {
+      try {
+        const token = await getServiceToken();
+        if (token) {
+          const res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            cache: 'no-store',
+          });
 
-  // Jika tidak seperti format ID, skip
-  if (!isLikelyId(slugOrId)) {
-    return NextResponse.next();
-  }
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            const workshop = data?.data || data;
 
-  // Cek apakah ini benar-benar ID dengan fetch ke API
-  try {
-    const token = await getServiceToken();
-    if (!token) {
-      return NextResponse.next();
-    }
+            if (workshop?.id === slugOrId && workshop?.slug) {
+              const redirectUrl = `${proto}://${host}/workshop/${workshop.slug}`;
+              return NextResponse.redirect(redirectUrl, 301);
+            }
 
-    const res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
+            // Generate slug dari name jika slug kosong
+            if (workshop?.id === slugOrId && workshop?.name && !workshop?.slug) {
+              const generatedSlug = workshop.name
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
 
-    if (res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const workshop = data?.data || data;
-
-      // Pastikan ini benar-benar ID yang match
-      if (workshop?.id === slugOrId && workshop?.slug) {
-        // Redirect 301 permanent ke URL slug
-        const newUrl = new URL(`/workshop/${workshop.slug}`, request.url);
-        return NextResponse.redirect(newUrl, { status: 301 });
-      }
-
-      // Jika tidak ada slug tapi ada name, generate slug (menggunakan createSlug logic)
-      if (workshop?.id === slugOrId && workshop?.name && !workshop?.slug) {
-        // Gunakan logika yang sama dengan createSlug di lib/utils/slug.ts
-        const generatedSlug = workshop.name
-          .toLowerCase()
-          .trim()
-          .replace(/[^\w\s-]/g, '') // Remove special characters
-          .replace(/[\s_-]+/g, '-') // Replace spaces, underscores, and multiple hyphens with single hyphen
-          .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-        const newUrl = new URL(`/workshop/${generatedSlug}`, request.url);
-        return NextResponse.redirect(newUrl, { status: 301 });
+              const redirectUrl = `${proto}://${host}/workshop/${generatedSlug}`;
+              return NextResponse.redirect(redirectUrl, 301);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in middleware redirect check:', error);
       }
     }
-  } catch (error) {
-    // Jika error, biarkan proses lanjut
-    console.error('Error in middleware redirect check:', error);
   }
 
   return NextResponse.next();
