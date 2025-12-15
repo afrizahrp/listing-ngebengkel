@@ -87,6 +87,27 @@ export async function middleware(request: NextRequest) {
 
   const { pathname, search } = request.nextUrl;
 
+  // ===== Redirect URL dengan port → URL tanpa port =====
+  // Handle jika host mengandung port (mis: ngebengkel.com:3200, ngebengkel.com:3220)
+  // Port seharusnya tidak muncul di URL publik - ini adalah port internal
+  if (host.includes(':')) {
+    const cleanHost = host.split(':')[0]; // Hapus port dari host
+    // Hanya redirect jika bukan port standar (80 untuk HTTP, 443 untuk HTTPS)
+    const port = host.split(':')[1];
+    const isStandardPort = (proto === 'http' && port === '80') || (proto === 'https' && port === '443');
+    
+    if (!isStandardPort) {
+      const redirectUrl = `${proto}://${cleanHost}${pathname}${search}`;
+      return NextResponse.redirect(redirectUrl, 301);
+    }
+  }
+
+  // ===== Handle typo domain (hgebengkel.com → ngebengkel.com) =====
+  if (host.includes('hgebengkel.com')) {
+    const redirectUrl = `${proto}://ngebengkel.com${pathname}${search}`;
+    return NextResponse.redirect(redirectUrl, 301);
+  }
+
   // ===== WWW → non-WWW redirect =====
   if (host.startsWith('www.')) {
     const newHost = host.replace('www.', '');
