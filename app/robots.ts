@@ -5,7 +5,11 @@ export default function robots(): MetadataRoute.Robots {
     process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, '') ||
     'https://ngebengkel.com';
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  // Check if we're in production by verifying baseUrl points to production domain
+  // This is more reliable than NODE_ENV alone
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    baseUrl.includes('ngebengkel.com');
 
   return {
     rules: isProduction
@@ -17,6 +21,8 @@ export default function robots(): MetadataRoute.Robots {
               '/bengkel/', // Allow workshop listings
               '/masalah/', // Allow pain point pages
               '/artikel/', // Allow article pages
+              '/workshop/', // Allow workshop detail pages
+              '/cari-bengkel/', // Allow search pages
               '/_next/static/', // Allow static assets (fonts, CSS, JS)
               '/_next/image/', // Allow Next.js optimized images
             ],
