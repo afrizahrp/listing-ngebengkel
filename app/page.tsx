@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import { CTA } from "./workshop/components/CTA";
-import Link from "next/link";
-import { ChevronRight, FileText, AlertCircle } from "lucide-react";
 
 export default function Home() {
   return (
