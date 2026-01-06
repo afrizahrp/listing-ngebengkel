@@ -35,15 +35,70 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const slug = params?.slug ?? '';
-  const painPoint = await getPainPointData(slug);
+  
+  // Use try-catch for better error handling
+  let painPoint;
+  try {
+    painPoint = await getPainPointData(slug);
+  } catch (error) {
+    console.error('Error in generateMetadata for pain point:', slug, error);
+    painPoint = null;
+  }
 
+  // If pain point not found, return indexable metadata with generic content
   if (!painPoint) {
+    const normalizedSlug = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const canonicalUrl = `https://ngebengkel.com/masalah/${slug}`;
+    
     return {
-      title: 'Masalah Kendaraan Tidak Ditemukan',
-      description: 'Halaman masalah kendaraan yang Kamu cari tidak ditemukan.',
+      title: `${normalizedSlug} - Solusi Bengkel Terpercaya | Ngebengkel.com`,
+      description: `${normalizedSlug}. Temukan bengkel terpercaya untuk mengatasi masalah kendaraan Kamu. Dapatkan solusi terbaik dengan harga terjangkau.`,
+      keywords: [
+        normalizedSlug,
+        'bengkel',
+        'servis kendaraan',
+        'perbaikan kendaraan',
+        'bengkel terdekat',
+        'bengkel terpercaya',
+        'masalah kendaraan',
+      ],
+      openGraph: {
+        type: 'website',
+        locale: 'id_ID',
+        url: canonicalUrl,
+        siteName: 'Ngebengkel.com',
+        title: `${normalizedSlug} - Solusi Bengkel Terpercaya`,
+        description: `${normalizedSlug}. Temukan bengkel terpercaya untuk mengatasi masalah kendaraan Kamu.`,
+        images: [
+          {
+            url: 'https://ngebengkel.com/logo-circle.webp',
+            width: 1200,
+            height: 630,
+            alt: `${normalizedSlug} - Ngebengkel.com`,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${normalizedSlug} - Solusi Bengkel Terpercaya`,
+        description: `${normalizedSlug}. Temukan bengkel terpercaya untuk mengatasi masalah kendaraan Kamu.`,
+        images: ['https://ngebengkel.com/logo-circle.webp'],
+        creator: '@ngebengkel',
+        site: '@ngebengkel',
+      },
+      alternates: {
+        canonical: canonicalUrl,
+      },
       robots: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
       },
     };
   }

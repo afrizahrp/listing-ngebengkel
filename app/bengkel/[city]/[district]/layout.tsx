@@ -10,22 +10,85 @@ export async function generateMetadata({
   const cityIdOrName = decodeURIComponent(params?.city ?? '');
   const districtIdOrName = decodeURIComponent(params?.district ?? '');
   
-  const [city, district] = await Promise.all([
-    getCityData(cityIdOrName),
-    getDistrictData(districtIdOrName),
-  ]);
-  
-  const workshops = (city && district) 
-    ? await getWorkshopsByLocation({ city: city.id, district: district.id })
-    : [];
+  // Use try-catch for better error handling
+  let city, district, workshops;
+  try {
+    [city, district] = await Promise.all([
+      getCityData(cityIdOrName),
+      getDistrictData(districtIdOrName),
+    ]);
+    
+    workshops = (city && district) 
+      ? await getWorkshopsByLocation({ city: city.id, district: district.id })
+      : [];
+  } catch (error) {
+    console.error('Error in generateMetadata for district:', cityIdOrName, districtIdOrName, error);
+    city = null;
+    district = null;
+    workshops = [];
+  }
 
+  // If data not found, return indexable metadata with generic content
   if (!city || !district) {
+    const normalizedCityName = cityIdOrName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const normalizedDistrictName = districtIdOrName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const canonicalUrl = `https://ngebengkel.com/bengkel/${encodeURIComponent(cityIdOrName.toLowerCase())}/${encodeURIComponent(districtIdOrName.toLowerCase())}`;
+    
     return {
-      title: 'Bengkel di Lokasi Tidak Ditemukan',
-      description: 'Halaman bengkel untuk lokasi yang Kamu cari tidak ditemukan.',
+      title: `Daftar Bengkel di ${normalizedDistrictName}, ${normalizedCityName} | Ngebengkel.com`,
+      description: `Cari bengkel terdekat di ${normalizedDistrictName}, ${normalizedCityName}. Temukan bengkel berkualitas untuk servis kendaraan Kamu. Booking online, mudah dan cepat.`,
+      keywords: [
+        `bengkel ${normalizedDistrictName}`,
+        `bengkel di ${normalizedDistrictName} ${normalizedCityName}`,
+        `servis mobil ${normalizedDistrictName}`,
+        `servis motor ${normalizedDistrictName}`,
+        `bengkel terdekat ${normalizedDistrictName}`,
+        normalizedDistrictName,
+        normalizedCityName,
+        'bengkel',
+        'servis kendaraan',
+      ],
+      openGraph: {
+        type: 'website',
+        locale: 'id_ID',
+        url: canonicalUrl,
+        siteName: 'Ngebengkel.com',
+        title: `Daftar Bengkel di ${normalizedDistrictName}, ${normalizedCityName}`,
+        description: `Cari bengkel terdekat di ${normalizedDistrictName}, ${normalizedCityName}. Temukan bengkel berkualitas untuk servis kendaraan Kamu.`,
+        images: [
+          {
+            url: 'https://ngebengkel.com/logo-circle.webp',
+            width: 1200,
+            height: 630,
+            alt: `Daftar Bengkel di ${normalizedDistrictName}, ${normalizedCityName} - Ngebengkel.com`,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `Daftar Bengkel di ${normalizedDistrictName}, ${normalizedCityName}`,
+        description: `Cari bengkel terdekat di ${normalizedDistrictName}, ${normalizedCityName}. Temukan bengkel berkualitas untuk servis kendaraan Kamu.`,
+        images: ['https://ngebengkel.com/logo-circle.webp'],
+        creator: '@ngebengkel',
+        site: '@ngebengkel',
+      },
+      alternates: {
+        canonical: canonicalUrl,
+      },
       robots: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      other: {
+        'geo.region': 'ID',
+        'geo.placename': `${normalizedDistrictName}, ${normalizedCityName}`,
       },
     };
   }

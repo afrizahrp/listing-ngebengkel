@@ -154,15 +154,73 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const slugOrId = params?.slug ?? '';
-  const workshop = await getWorkshopData(slugOrId);
+  
+  // Use try-catch for better error handling
+  let workshop;
+  try {
+    workshop = await getWorkshopData(slugOrId);
+  } catch (error) {
+    console.error('Error in generateMetadata for workshop:', slugOrId, error);
+    workshop = null;
+  }
 
+  // If workshop not found, return indexable metadata with generic content
   if (!workshop) {
+    const normalizedSlug = slugOrId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const canonicalUrl = `https://ngebengkel.com/workshop/${slugOrId}`;
+    
     return {
-      title: 'Bengkel Tidak Ditemukan',
-      description: 'Halaman bengkel yang Kamu cari tidak ditemukan.',
+      title: `${normalizedSlug} - Bengkel Terpercaya | Ngebengkel.com`,
+      description: `${normalizedSlug} - Bengkel terpercaya untuk servis kendaraan berkualitas dengan harga terjangkau. Layanan servis mobil dan motor terbaik. Hubungi kami untuk informasi lebih lanjut.`,
+      keywords: [
+        normalizedSlug,
+        'bengkel',
+        'servis kendaraan',
+        'bengkel terdekat',
+        'bengkel terpercaya',
+        'servis mobil',
+        'servis motor',
+      ],
+      openGraph: {
+        type: 'website',
+        locale: 'id_ID',
+        url: canonicalUrl,
+        siteName: 'Ngebengkel.com',
+        title: `${normalizedSlug} - Bengkel Terpercaya`,
+        description: `${normalizedSlug} - Bengkel terpercaya untuk servis kendaraan berkualitas dengan harga terjangkau.`,
+        images: [
+          {
+            url: 'https://ngebengkel.com/logo-circle.webp',
+            width: 1200,
+            height: 630,
+            alt: `${normalizedSlug} - Ngebengkel.com`,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${normalizedSlug} - Bengkel Terpercaya`,
+        description: `${normalizedSlug} - Bengkel terpercaya untuk servis kendaraan berkualitas dengan harga terjangkau.`,
+        images: ['https://ngebengkel.com/logo-circle.webp'],
+        creator: '@ngebengkel',
+        site: '@ngebengkel',
+      },
+      alternates: {
+        canonical: canonicalUrl,
+      },
       robots: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      other: {
+        'geo.region': 'ID',
       },
     };
   }
