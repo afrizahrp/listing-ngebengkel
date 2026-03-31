@@ -87,16 +87,23 @@ export async function middleware(request: NextRequest) {
 
   const { pathname, search } = request.nextUrl;
 
-  // ===== Redirect URL dengan port → URL tanpa port =====
-  // Handle jika host mengandung port (mis: ngebengkel.com:3200, ngebengkel.com:3220)
-  // Port seharusnya tidak muncul di URL publik - ini adalah port internal
+  // ===== Redirect URL dengan port → URL tanpa port (production only) =====
+  // Jangan redirect localhost/127.0.0.1 saat development agar http://localhost:3000 tetap bisa diakses.
   if (host.includes(':')) {
-    const cleanHost = host.split(':')[0]; // Hapus port dari host
+    const cleanHost = host.split(':')[0];
+    const lowerHost = cleanHost.toLowerCase();
+    const isLocalHost =
+      lowerHost === 'localhost' ||
+      lowerHost === '127.0.0.1' ||
+      lowerHost === '::1' ||
+      lowerHost.endsWith('.local');
+
     // Hanya redirect jika bukan port standar (80 untuk HTTP, 443 untuk HTTPS)
     const port = host.split(':')[1];
-    const isStandardPort = (proto === 'http' && port === '80') || (proto === 'https' && port === '443');
-    
-    if (!isStandardPort) {
+    const isStandardPort =
+      (proto === 'http' && port === '80') || (proto === 'https' && port === '443');
+
+    if (!isLocalHost && !isStandardPort) {
       const redirectUrl = `${proto}://${cleanHost}${pathname}${search}`;
       return NextResponse.redirect(redirectUrl, 301);
     }

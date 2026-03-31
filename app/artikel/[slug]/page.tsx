@@ -1,18 +1,20 @@
-'use client';
-
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { useArticles } from '@/queryHooks/useArticles';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { notFound, redirect } from 'next/navigation';
+import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
 import { Badge } from '@/components/ui/badge';
-import { ShareButton } from '@/components/ui/share-button';
-import { ArrowLeft, Eye, Calendar, CheckCircle2, AlertCircle, Wrench, MessageCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Calendar, Eye, Wrench, CheckCircle2, MessageCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArticleStructuredData } from './components/ArticleStructuredData';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ShareButton } from '@/components/ui/share-button';
+import { ArticleStructuredData } from './components/ArticleStructuredData';
+
+export const revalidate = 3600;
+
+const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+const baseTrim = base.replace(/\/+$/, '');
+const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
 
 const CATEGORY_COLORS: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-800 border-red-200',
@@ -20,154 +22,168 @@ const CATEGORY_COLORS: Record<string, string> = {
   MAINTENANCE: 'bg-green-100 text-green-800 border-green-200',
   BODYWORK: 'bg-purple-100 text-purple-800 border-purple-200',
   ELECTRICAL: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  STEER: 'bg-orange-100 text-orange-800 border-orange-200',
   SUSPENSION: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  TIRES: 'bg-pink-100 text-pink-800 border-pink-200',
 };
 
-export default function ArticleDetailPage() {
-  const params = useParams<{ slug: string }>();
-  const router = useRouter();
-  const rawSlug = (params?.slug as string) || '';
-  const slug = rawSlug.replace(/^seasonal-/, '');
+const CATEGORY_LABELS: Record<string, string> = {
+  URGENT: 'Urgent',
+  GENERAL: 'Umum',
+  MAINTENANCE: 'Perawatan',
+  BODYWORK: 'Body',
+  ELECTRICAL: 'Kelistrikan',
+  STEER: 'Setir',
+  SUSPENSION: 'Suspensi',
+};
 
-  const { article, workshops, loading, error, fetchArticleBySlug, fetchRecommendedWorkshops } = useArticles();
+interface ArticleContent {
+  causes?: string[];
+  diagnosis?: string[];
+  costEstimate?: { minIDR: number; maxIDR: number; notes: string };
+  safety?: string;
+  prevention?: string[];
+  faq?: Array<{ question: string; answer: string }>;
+}
 
-  useEffect(() => {
-    if (slug) {
-      fetchArticleBySlug(slug).then((articleData) => {
-        // Redirect to /masalah/{slug} if pain point exists and matches the slug
-        if (articleData?.painPoint?.slug === slug) {
-          router.replace(`/masalah/${slug}`);
-          return;
-        }
+interface Article {
+  id: string;
+  slug: string;
+  painPoint_id?: string;
+  title: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  content: ArticleContent;
+  imageUrl?: string;
+  publishedAt?: string | null;
+  generatedAt?: string;
+  viewCount?: number;
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  painPoint?: { id: string; slug: string; title: string; category: string };
+}
 
-        if (articleData?.id) {
-          fetchRecommendedWorkshops(articleData.id);
-        }
-      }).catch((err) => {
-        console.error('Failed to fetch article:', err);
-      });
-    }
-  }, [slug, fetchArticleBySlug, fetchRecommendedWorkshops, router]);
+interface RecommendedWorkshop {
+  id: string;
+  name: string;
+  slug: string;
+  address?: string;
+  logo?: string | null;
+  city?: string;
+  mobile?: string;
+  claimStatus?: string;
+}
 
-  const content = article?.content || {};
-
-  // Only show error/skeleton if we've attempted to load (loading was true at some point)
-  if (error || (!article && loading === false)) {
-    if (loading) {
-      return (
-        <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="space-y-6">
-            {/* Back Button Skeleton */}
-            <Skeleton className="h-10 w-24" />
-
-            {/* Meta Info Skeleton */}
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-
-            {/* Title Skeleton */}
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-3/4" />
-            </div>
-
-            {/* Featured Image Skeleton */}
-            <Skeleton className="w-full h-[400px] rounded-lg" />
-
-            {/* Content Skeleton */}
-            <Card>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Skeleton className="h-8 w-48" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-                <div className="space-y-3">
-                  <Skeleton className="h-8 w-48" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      );
-    }
-
-    return (
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <Card className="p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Artikel Tidak Ditemukan</h1>
-          <p className="text-gray-600 mb-6">
-            Artikel yang Anda cari tidak tersedia atau sudah dihapus
-          </p>
-          <Button onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
-        </Card>
-      </main>
-    );
-  }
-
-  // At this point, article is guaranteed to be non-null
-  if (!article) {
+async function getArticleBySlug(slug: string): Promise<Article | null> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/wks/articles/slug/${encodeURIComponent(slug)}`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return data || null;
+  } catch {
     return null;
   }
+}
 
+async function getRecommendedWorkshops(articleId: string): Promise<RecommendedWorkshop[]> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(
+      `${apiBase}/wks/articles/${encodeURIComponent(articleId)}/recommended-workshops`,
+      {
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        next: { revalidate: 3600 },
+      },
+    );
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => []);
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch {
+    return [];
+  }
+}
+
+export async function generateStaticParams() {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/wks/articles?status=PUBLISHED&limit=1000`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => ({}));
+    const items: Array<{ slug: string; painPoint?: { slug?: string } }> = Array.isArray(data)
+      ? data
+      : (data?.data || []);
+    return items
+      .filter((item) => item.slug && item.painPoint?.slug !== item.slug)
+      .map((item) => ({ slug: item.slug.replace(/^seasonal-/, '') }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function ArticleDetailPage({ params }: { params: { slug: string } }) {
+  const rawSlug = params?.slug ?? '';
+  const slug = rawSlug.replace(/^seasonal-/, '');
+
+  const article = await getArticleBySlug(slug);
+  if (!article) notFound();
+
+  // Redirect artikel yang terkait pain point ke /masalah/{slug}
+  if (article.painPoint?.slug === slug) {
+    redirect(`/masalah/${slug}`);
+  }
+
+  const workshops = article.id ? await getRecommendedWorkshops(article.id) : [];
+  const content: ArticleContent = article.content || {};
   const articleSlug = article.slug?.replace(/^seasonal-/, '') || article.slug;
   const painPointSlug = article.painPoint?.slug;
   const painPointTitle = article.painPoint?.title || 'kendala ini';
-  const isSeasonal = !article.painPoint; // Detect if it's a seasonal article
-
+  const isSeasonal = !article.painPoint;
 
   return (
     <>
       <ArticleStructuredData article={article} />
-      
+
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-               {!isSeasonal && (
-
-       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <Link href={painPointSlug ? `/bengkel?painPoint=${painPointSlug}` : '/bengkel'}>
-            <Button size="sm">
-              Cari bengkel untuk {painPointTitle}
-            </Button>
-          </Link>
-        
-        </div>
-        )}
-
-         {/* Alternative CTA for seasonal articles */}
-        {isSeasonal && (
-          <div className="mb-6">
-            <Link href="/bengkel">
-              <Button size="sm">
-                Cari Bengkel Terdekat
-              </Button>
+        {!isSeasonal && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <Link href={painPointSlug ? `/bengkel?painPoint=${painPointSlug}` : '/bengkel'}>
+              <Button size="sm">Cari bengkel untuk {painPointTitle}</Button>
             </Link>
           </div>
         )}
 
-        {/* Article Header */}
+        {isSeasonal && (
+          <div className="mb-6">
+            <Link href="/bengkel">
+              <Button size="sm">Cari Bengkel Terdekat</Button>
+            </Link>
+          </div>
+        )}
+
         <article className="space-y-6">
           {/* Meta Info & Share Button */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4 text-sm text-gray-600">
               {article.painPoint?.category && (
-                <Badge className={CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100'}>
-                  {article.painPoint.category}
+                <Badge
+                  className={
+                    cn(CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100', 'border')
+                  }
+                >
+                  {CATEGORY_LABELS[article.painPoint.category] || article.painPoint.category}
                 </Badge>
               )}
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
                 <span>
-                  {new Date(article.publishedAt || article.generatedAt).toLocaleDateString('id-ID', {
+                  {new Date(
+                    article.publishedAt || article.generatedAt || Date.now(),
+                  ).toLocaleDateString('id-ID', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -182,16 +198,13 @@ export default function ArticleDetailPage() {
             <ShareButton
               url={`/artikel/${articleSlug}`}
               title={article.title}
-              description={article.metaDescription}
+              description={article.metaDescription || ''}
               variant="outline"
-              size="default"
             />
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl font-bold text-gray-900 leading-tight">
-            {article.title}
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 leading-tight">{article.title}</h1>
 
           {/* Featured Image */}
           {article.imageUrl && (
@@ -217,7 +230,7 @@ export default function ArticleDetailPage() {
                     Penyebab {article.painPoint?.title}
                   </h2>
                   <ul className="space-y-3">
-                    {content.causes.map((cause: string, i: number) => (
+                    {content.causes.map((cause, i) => (
                       <li key={i} className="flex items-start gap-3 text-gray-700">
                         <span className="flex-shrink-0 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-sm font-semibold mt-0.5">
                           {i + 1}
@@ -237,7 +250,7 @@ export default function ArticleDetailPage() {
                     Cara Diagnosis
                   </h2>
                   <ol className="space-y-3">
-                    {content.diagnosis.map((step: string, i: number) => (
+                    {content.diagnosis.map((step, i) => (
                       <li key={i} className="flex items-start gap-3 text-gray-700">
                         <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold mt-0.5">
                           {i + 1}
@@ -253,7 +266,7 @@ export default function ArticleDetailPage() {
               {content.costEstimate && (
                 <section className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-3">
-                    💰 Estimasi Biaya Perbaikan
+                    Estimasi Biaya Perbaikan
                   </h2>
                   <p className="text-2xl font-bold text-yellow-900 mb-2">
                     Rp {content.costEstimate.minIDR?.toLocaleString('id-ID')} - Rp{' '}
@@ -265,14 +278,10 @@ export default function ArticleDetailPage() {
                 </section>
               )}
 
-               
-
               {/* Safety Tips */}
               {content.safety && (
                 <section className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">
-                    ⚠️ Tips Keselamatan
-                  </h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-3">Tips Keselamatan</h2>
                   <p className="text-gray-700">{content.safety}</p>
                 </section>
               )}
@@ -285,7 +294,7 @@ export default function ArticleDetailPage() {
                     Cara Pencegahan
                   </h2>
                   <ul className="space-y-3">
-                    {content.prevention.map((tip: string, i: number) => (
+                    {content.prevention.map((tip, i) => (
                       <li key={i} className="flex items-start gap-3 text-gray-700">
                         <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <span className="flex-1">{tip}</span>
@@ -302,7 +311,7 @@ export default function ArticleDetailPage() {
                     Pertanyaan yang Sering Ditanyakan
                   </h2>
                   <div className="space-y-4">
-                    {content.faq.map((item: { question: string; answer: string }, i: number) => (
+                    {content.faq.map((item, i) => (
                       <Card key={i} className="border-l-4 border-l-blue-600">
                         <CardContent className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-2">{item.question}</h3>
@@ -316,8 +325,8 @@ export default function ArticleDetailPage() {
             </CardContent>
           </Card>
 
-         {/* Recommended Workshops */}
-          {workshops && workshops.length > 0 && (
+          {/* Recommended Workshops */}
+          {workshops.length > 0 && (
             <section className="mt-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Bengkel Rekomendasi untuk {article.painPoint?.title}
@@ -337,63 +346,37 @@ export default function ArticleDetailPage() {
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">
-                            {workshop.name}
-                          </h3>
+                          <h3 className="font-semibold text-gray-900 truncate">{workshop.name}</h3>
                           <p className="text-sm text-gray-600 mb-4">
                             {workshop.city || 'Kota tidak tersedia'}
                           </p>
                           <div className="flex flex-col gap-2">
                             {workshop.mobile && (
-                              <>
-                                {workshop.claimStatus === 'CLAIMED' ? (
-                                  <a 
-                                    href={`https://wa.me/${workshop.mobile.replace(/\D/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full"
-                                  >
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className={cn(
-                                        "w-full gap-2 rounded-lg",
-                                        "transition-all duration-200",
-                                        "focus:outline-none",
-                                        "h-9"
-                                      )}
-                                      style={{
-                                        borderColor: 'rgba(22, 163, 74, 0.4)',
-                                        color: '#16A34A',
-                                        backgroundColor: 'transparent'
-                                      }}
-                                    >
-                                      <MessageCircle className="h-4 w-4" />
-                                      WhatsApp
-                                    </Button>
-                                  </a>
-                                ) : (
-                                  <Button 
-                                    size="sm" 
+                              workshop.claimStatus === 'CLAIMED' ? (
+                                <a
+                                  href={`https://wa.me/${workshop.mobile.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full"
+                                >
+                                  <Button
+                                    size="sm"
                                     variant="outline"
-                                    className={cn(
-                                      "w-full gap-2 rounded-lg",
-                                      "transition-all duration-200",
-                                      "focus:outline-none",
-                                      "h-9 opacity-50 cursor-not-allowed"
-                                    )}
-                                    style={{
-                                      borderColor: 'rgba(22, 163, 74, 0.4)',
-                                      color: '#16A34A',
-                                      backgroundColor: 'transparent'
-                                    }}
-                                    disabled
+                                    className="w-full gap-2 border-green-600/40 text-green-600"
                                   >
-                                    <MessageCircle className="h-4 w-4" />
-                                    WhatsApp
+                                    <MessageCircle className="h-4 w-4" /> WhatsApp
                                   </Button>
-                                )}
-                              </>
+                                </a>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  className="w-full gap-2 opacity-50"
+                                >
+                                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                                </Button>
+                              )
                             )}
                             <Link href={`/workshop/${workshop.slug}`} className="w-full">
                               <Button variant="outline" size="sm" className="w-full">
@@ -409,9 +392,7 @@ export default function ArticleDetailPage() {
               </div>
               <div className="mt-6 text-center">
                 <Link href={`/bengkel?painPoint=${article.painPoint?.slug}`}>
-                  <Button size="lg">
-                    Lihat Semua Bengkel untuk {article.painPoint?.title}
-                  </Button>
+                  <Button size="lg">Lihat Semua Bengkel untuk {article.painPoint?.title}</Button>
                 </Link>
               </div>
             </section>

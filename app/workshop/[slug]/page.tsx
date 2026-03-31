@@ -1,512 +1,219 @@
-'use client';
-
-import { useParams, useRouter } from 'next/navigation';
-import { useWaitingList } from '@/queryHooks/useWaitingList';
-import { useWorkshopImages } from '@/queryHooks/useWorkshopImages';
-import { useWorkshopVideos } from '@/queryHooks/useWorkshopVideos';
-import { useCityName, useProvinceName, useDistrictName, useSubdistrictName } from '@/queryHooks/useLocationNames';
-import { Button } from '@/components/ui/button';
+import { notFound } from 'next/navigation';
+import { getServiceTokenWithRefresh } from '@/lib/utils/service-token-manager';
+import {
+  getCityData,
+  getProvinceData,
+  getDistrictData,
+  getSubdistrictData,
+} from '@/lib/utils/location-data';
+import { createSlug } from '@/lib/utils/slug';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
-import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink, ArrowLeft, ChevronLeft, ChevronRight, X, Play, Video, CameraIcon } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Phone, Mail, Building2, MessageCircle, ExternalLink } from 'lucide-react';
+import { WorkshopGalleryClient } from './components/WorkshopGalleryClient';
+import { WorkshopBackButton } from './components/WorkshopBackButton';
+import { WorkshopClaimButton } from './components/WorkshopClaimButton';
+import { WorkingHoursDisplay } from './components/WorkingHoursDisplay';
 import { WorkshopMap } from '../components/WorkshopMap';
 import { ListingDisclaimer } from '../components/ListingDisclaimer';
-import { WorkingHoursDisplay } from './components/WorkingHoursDisplay';
-import { CLAIM_MANUAL_WHATSAPP_NUMBER } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 
-export default function WorkshopDetailPage() {
-  const params = useParams<{ slug: string }>();
-  const router = useRouter();
+export const revalidate = 3600;
+
+const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+const baseTrim = base.replace(/\/+$/, '');
+const apiBase = baseTrim.endsWith('/api') ? baseTrim : `${baseTrim}/api`;
+
+interface WorkshopImage {
+  id: string;
+  imageURL: string;
+  isPrimary?: boolean;
+  seq?: number | null;
+  createdAt?: string;
+}
+
+interface WorkshopVideo {
+  id: string;
+  videoURL: string;
+  thumbnailURL?: string;
+  title?: string;
+  duration?: number;
+  isPrimary?: boolean;
+  seq?: number | null;
+}
+
+async function getWorkshopData(slugOrId: string) {
+  try {
+    const token = await getServiceTokenWithRefresh();
+
+    const res = await fetch(`${apiBase}/waiting-list/${encodeURIComponent(slugOrId)}`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600 },
+    });
+
+    if (res.status === 404) {
+      const allRes = await fetch(`${apiBase}/waiting-list`, {
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        next: { revalidate: 3600 },
+      });
+
+      if (allRes.ok) {
+        const allData = await allRes.json().catch(() => ({}));
+        const items = Array.isArray(allData) ? allData : (allData?.data || []);
+        const foundItem = items.find(
+          (item: { slug?: string | null; name?: string; id?: string }) => {
+            if (item.slug && item.slug.toLowerCase() === slugOrId.toLowerCase()) return true;
+            if (item.id === slugOrId) return true;
+            if (item.name) return createSlug(item.name) === slugOrId;
+            return false;
+          },
+        );
+        return foundItem || null;
+      }
+    }
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return data?.data || data;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function getWorkshopImages(waitingListId: string): Promise<WorkshopImage[]> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/wks/images?waitingListId=${encodeURIComponent(waitingListId)}`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => []);
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch {
+    return [];
+  }
+}
+
+async function getWorkshopVideos(waitingListId: string): Promise<WorkshopVideo[]> {
+  try {
+    const token = await getServiceTokenWithRefresh();
+    const res = await fetch(`${apiBase}/wks/videos?waitingListId=${encodeURIComponent(waitingListId)}`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => []);
+    return Array.isArray(data) ? data : (data?.data || []);
+  } catch {
+    return [];
+  }
+}
+
+export default async function WorkshopDetailPage({ params }: { params: { slug: string } }) {
   const slugOrId = params?.slug ?? '';
 
-  // Slug bisa berupa ID atau nama yang sudah di-slug
-  // useWaitingList akan handle pencarian berdasarkan slug
-  const { data, isLoading, isError } = useWaitingList(slugOrId, { enabled: Boolean(slugOrId) });
-  
-  // Fetch images dan videos untuk workshop ini
-  // Trim ID untuk menghilangkan spasi yang tidak perlu
-  const waitingListId = data?.id?.trim();
-  const { data: images = [] } = useWorkshopImages(
-    waitingListId,
-    null,
-    { enabled: Boolean(waitingListId) },
-  );
-  const { data: videos = [] } = useWorkshopVideos(
-    waitingListId,
-    null,
-    { enabled: Boolean(waitingListId) },
-  );
-  
-  // Fetch nama wilayah menggunakan React Query untuk caching otomatis
-  const { data: cityName } = useCityName(data?.city, { enabled: Boolean(data?.city) });
-  const { data: provinceName } = useProvinceName(data?.province, { enabled: Boolean(data?.province) });
-  const { data: districtName } = useDistrictName(data?.district, { enabled: Boolean(data?.district) });
-  const { data: subdistrictName } = useSubdistrictName(data?.subdistrict, { enabled: Boolean(data?.subdistrict) });
+  const workshop = await getWorkshopData(slugOrId);
+  if (!workshop) notFound();
 
+  const waitingListId = workshop.id?.trim();
 
-  // Generate gallery images dari API atau fallback ke placeholder workshop/bengkel
-  const galleryImages = useMemo(() => {
-    if (images.length > 0) {
-      // Sort by seq, then by isPrimary (primary first), then by createdAt
-      const sorted = [...images].sort((a, b) => {
-        if (a.isPrimary && !b.isPrimary) return -1;
-        if (!a.isPrimary && b.isPrimary) return 1;
-        if (a.seq !== null && b.seq !== null) return a.seq - b.seq;
-        if (a.seq !== null) return -1;
-        if (b.seq !== null) return 1;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      });
-      const urls = sorted.map((img) => img.imageURL);
-      return urls;
-    }
-    // Fallback ke placeholder workshop/bengkel jika belum ada image di wks_Images
-    return ['/images/workshop-placeholder-3.webp']; // Placeholder identik dengan workshop/bengkel
-  }, [images]);
+  // Fetch images, videos, and location names in parallel
+  const [images, videos, cityData, provinceData, districtData, subdistrictData] =
+    await Promise.all([
+      waitingListId ? getWorkshopImages(waitingListId) : Promise.resolve([]),
+      waitingListId ? getWorkshopVideos(waitingListId) : Promise.resolve([]),
+      workshop.city ? getCityData(workshop.city) : Promise.resolve(null),
+      workshop.province ? getProvinceData(workshop.province) : Promise.resolve(null),
+      workshop.district ? getDistrictData(workshop.district) : Promise.resolve(null),
+      workshop.subdistrict ? getSubdistrictData(workshop.subdistrict) : Promise.resolve(null),
+    ]);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const cityName = cityData?.name || null;
+  const provinceName = provinceData?.name || null;
+  const districtName = districtData?.name || null;
+  const subdistrictName = subdistrictData?.name || null;
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-  };
+  // Build full address
+  const addressParts = [
+    workshop.address,
+    subdistrictName,
+    districtName,
+    cityName || workshop.city,
+    provinceName || workshop.province,
+  ].filter(Boolean);
+  const fullAddress = addressParts.join(', ');
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-  };
+  // Build Google Maps URL
+  const mapsUrl = fullAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
+    : '';
 
-  const goToImage = (index: number) => {
-    setCurrentImageIndex(index);
-  };
-
-  // Keyboard navigation untuk lightbox
-  useEffect(() => {
-    if (!isLightboxOpen) return;
-    // Check if window is available (client-side only)
-    if (typeof window === 'undefined') return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-      } else if (e.key === 'ArrowRight') {
-        setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-      } else if (e.key === 'Escape') {
-        setIsLightboxOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen, galleryImages.length]);
-
-
-  // Generate Google Maps search URL (gratis, tidak perlu API key)
-  // Lebih reliable untuk pencarian alamat di Indonesia dibanding OpenStreetMap search
-  // Hanya gunakan nama yang sudah di-fetch, jangan gunakan ID
-  const mapsUrl = useMemo(() => {
-    if (!data) return '';
-    const addressParts = [
-      data.address,
-      subdistrictName, // Hanya gunakan jika sudah di-fetch (bukan ID)
-      districtName,    // Hanya gunakan jika sudah di-fetch (bukan ID)
-      cityName,        // Hanya gunakan jika sudah di-fetch (bukan ID)
-      provinceName     // Hanya gunakan jika sudah di-fetch (bukan ID)
-    ].filter(Boolean); // Filter null/undefined/empty
-    
-    // Pastikan minimal ada alamat utama
-    if (addressParts.length === 0) return '';
-    
-    const address = addressParts.join(', ');
-    // Google Maps search URL - gratis, tidak perlu API key
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  }, [data, provinceName, cityName, districtName, subdistrictName]);
-
-  // Generate full address untuk map (hanya gunakan nama, bukan ID)
-  const fullAddress = useMemo(() => {
-    if (!data) return '';
-    const addressParts = [
-      data.address,
-      subdistrictName, // Hanya gunakan jika sudah di-fetch
-      districtName,    // Hanya gunakan jika sudah di-fetch
-      cityName,        // Hanya gunakan jika sudah di-fetch
-      provinceName     // Hanya gunakan jika sudah di-fetch
-    ].filter(Boolean); // Filter null/undefined/empty
-    
-    return addressParts.join(', ');
-  }, [data, provinceName, cityName, districtName, subdistrictName]);
-
-  // Generate WhatsApp URL
-  const whatsappUrl = useMemo(() => {
-    if (!data) return '';
-    const phone = data.mobile || data.phone || '';
-    const digitsOnly = phone.replace(/[^0-9]/g, '');
-    let normalized = digitsOnly;
-    if (digitsOnly.startsWith('0')) {
-      normalized = `62${digitsOnly.slice(1)}`;
-    } else if (digitsOnly.startsWith('8')) {
-      normalized = `62${digitsOnly}`;
-    }
-    const isValidWa = /^62[0-9]{8,13}$/.test(normalized);
-    if (!isValidWa) return '';
-    const message = `Halo, saya tertarik dengan layanan ${data.name}.`;
-    return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
-  }, [data]);
-
-  if (isLoading) {
-    return (
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-0">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-sm text-muted-foreground">Memuat detail bengkel...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-0">
-        <div className="mb-6">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Kembali
-          </Button>
-        </div>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-sm text-destructive">
-            {isError ? 'Gagal memuat detail bengkel.' : 'Data bengkel tidak ditemukan.'}
-          </p>
-        </div>
-      </main>
-    );
-  }
+  // Build WhatsApp URL server-side
+  const phone = workshop.mobile || workshop.phone || '';
+  const digitsOnly = phone.replace(/[^0-9]/g, '');
+  let normalized = digitsOnly;
+  if (digitsOnly.startsWith('0')) normalized = `62${digitsOnly.slice(1)}`;
+  else if (digitsOnly.startsWith('8')) normalized = `62${digitsOnly}`;
+  const isValidWa = /^62[0-9]{8,13}$/.test(normalized);
+  const whatsappUrl =
+    isValidWa && workshop.claimStatus === 'CLAIMED'
+      ? `https://wa.me/${normalized}?text=${encodeURIComponent(`Halo, saya tertarik dengan layanan ${workshop.name}.`)}`
+      : '';
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-0">
       <div className="mb-6">
-        <Button variant="outline" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Kembali
-        </Button>
+        <WorkshopBackButton />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Header dengan Nama */}
+          {/* Header */}
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{data.name}</h1>
-            {data.categoryName && (
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">{workshop.name}</h1>
+            {workshop.categoryName && (
               <Badge variant="secondary" className="text-base">
-                {data.categoryName}
+                {workshop.categoryName}
               </Badge>
             )}
           </div>
 
-          {/* Claim Section - Di bagian atas agar lebih terlihat */}
-          {data.claimStatus !== 'CLAIMED' && (
+          {/* Claim Section */}
+          {workshop.claimStatus !== 'CLAIMED' && (
             <Card>
               <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Kamu bisa menambahkan 3 foto setelah melakukan klaim bahwa kamu adalah pemilik bengkel ini.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                  onClick={() => {
-                    // Normalize nomor WhatsApp
-                    const digitsOnly = CLAIM_MANUAL_WHATSAPP_NUMBER.replace(/[^0-9]/g, '')
-                    let normalized = digitsOnly
-                    if (digitsOnly.startsWith('0')) {
-                      normalized = `62${digitsOnly.slice(1)}`
-                    } else if (digitsOnly.startsWith('8')) {
-                      normalized = `62${digitsOnly}`
-                    }
-                    
-                    // Buat pesan untuk klaim bengkel
-                    const message = `Halo, saya ingin menambahkan foto pada listing ${data.name} dan mengaktifkan WhatsApp agar pelanggan bisa menghubungi langsung.`
-                    const waLink = `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
-                    
-                    // Buka WhatsApp
-                    window.open(waLink, '_blank', 'noopener,noreferrer')
-                  }}
-                >
-                  <CameraIcon className="h-5 w-5" />
-                  {/* <Image className="h-5 w-5" src="/images/photo-camera.svg" alt="Tambahkan Foto Bengkel" /> */}
-                  <span className="font-medium">
-                    
-                    Tambahkan Foto Bengkel
-                  </span>
-                </Button>
-                {/* 
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                  onClick={async () => {
-                    if (!waitingListId) {
-                      toast.error('Error', {
-                        description: 'ID bengkel tidak ditemukan.',
-                      });
-                      return;
-                    }
-                    
-                    setIsClaiming(true);
-                    try {
-                      const result = await claimMutation.mutateAsync({
-                        waitingListId,
-                        phone: data.mobile || data.phone || '',
-                        name: data.name,
-                      });
-                      
-                      toast.success('Kode Verifikasi Dikirim', {
-                        description: result.message || 'Silakan cek WhatsApp untuk kode verifikasi.',
-                      });
-                      
-                      router.push(`/workshop/${slugOrId}/claim/verify?claimRequestId=${result.claimRequestId}`);
-                    } catch (error: unknown) {
-                      const description =
-                        error instanceof Error
-                          ? error.message || 'Terjadi kesalahan saat mengklaim bengkel.'
-                          : 'Terjadi kesalahan saat mengklaim bengkel.';
-                      toast.error('Gagal Klaim', {
-                        description,
-                      });
-                    } finally {
-                      setIsClaiming(false);
-                    }
-                  }}
-                  disabled={isClaiming || claimMutation.isPending}
-                >
-                  <ShieldCheck className="h-5 w-5" />
-                  <span className="font-medium">
-                    {isClaiming || claimMutation.isPending ? 'Memproses...' : 'Klaim Bengkel Ini'}
-                  </span>
-                </Button>
-                */}
+                <p className="text-sm text-muted-foreground">
+                  Kamu bisa menambahkan 3 foto setelah melakukan klaim bahwa kamu adalah pemilik
+                  bengkel ini.
+                </p>
+                <WorkshopClaimButton workshopName={workshop.name} />
               </CardContent>
             </Card>
           )}
 
-          {/* Gallery Carousel */}
-          {galleryImages.length > 0 && (
-            <Card className="overflow-hidden">
-              <div className="relative h-64 md:h-80 w-full bg-gray-100">
-                {/* Main Image */}
-                <div className="relative h-full w-full">
-                  <Image
-                    src={galleryImages[currentImageIndex] || galleryImages[0]}
-                    alt={`${data.name} - Image ${currentImageIndex + 1}`}
-                    fill
-                    className="object-cover cursor-pointer"
-                    priority
-                    onClick={() => setIsLightboxOpen(true)}
-                    unoptimized={true}
-                  />
-                
-                {/* Navigation Buttons */}
-                {galleryImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        prevImage();
-                      }}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        nextImage();
-                      }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
-                  </>
-                )}
-
-                {/* Image Counter */}
-                {galleryImages.length > 1 && (
-                  <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm z-10">
-                    {currentImageIndex + 1} / {galleryImages.length}
-                  </div>
-                )}
-              </div>
-
-              {/* Thumbnail Strip */}
-              {galleryImages.length > 1 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                    {galleryImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => goToImage(idx)}
-                        className={`
-                          relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all
-                          ${currentImageIndex === idx 
-                            ? 'border-white scale-110' 
-                            : 'border-transparent opacity-70 hover:opacity-100'
-                          }
-                        `}
-                      >
-                        <Image
-                          src={img}
-                          alt={`Thumbnail ${idx + 1}`}
-                          fill
-                          className="object-cover"
-                          unoptimized={true}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </Card>
-          )}
-
-          {/* Videos Section */}
-          {videos.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Video className="h-5 w-5 text-primary" />
-                  Video Bengkel
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {videos
-                    .sort((a, b) => {
-                      if (a.isPrimary && !b.isPrimary) return -1;
-                      if (!a.isPrimary && b.isPrimary) return 1;
-                      if (a.seq !== null && b.seq !== null) return a.seq - b.seq;
-                      return 0;
-                    })
-                    .map((video) => (
-                      <div
-                        key={video.id}
-                        className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 group cursor-pointer"
-                        onClick={() => window.open(video.videoURL, '_blank')}
-                      >
-                        {video.thumbnailURL ? (
-                          <Image
-                            src={video.thumbnailURL}
-                            alt={video.title || `Video ${video.id}`}
-                            fill
-                            className="object-cover"
-                            unoptimized={video.thumbnailURL.startsWith('http')}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <Video className="w-16 h-16 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-colors">
-                          <div className="bg-white/90 rounded-full p-4">
-                            <Play className="w-8 h-8 text-gray-900 ml-1" fill="currentColor" />
-                          </div>
-                        </div>
-                        {video.duration && (
-                          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                            {Math.floor(video.duration / 60)}:
-                            {String(Math.floor(video.duration % 60)).padStart(2, '0')}
-                          </div>
-                        )}
-                        {video.isPrimary && (
-                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                            Utama
-                          </div>
-                        )}
-                        {video.title && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                            <p className="text-white text-sm font-medium">{video.title}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Gallery + Videos (client component) */}
+          <WorkshopGalleryClient
+            images={images}
+            videos={videos}
+            workshopName={workshop.name}
+          />
 
           {/* Description */}
-          {data.description && (
+          {workshop.description && (
             <Card>
               <CardContent className="pt-6">
                 <div className="prose prose-sm max-w-none">
                   <p className="text-foreground leading-relaxed whitespace-pre-line">
-                    {data.description}
+                    {workshop.description}
                   </p>
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Lightbox Modal */}
-          {isLightboxOpen && (
-            <div
-              className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-              onClick={() => setIsLightboxOpen(false)}
-            >
-              <button
-                onClick={() => setIsLightboxOpen(false)}
-                className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
-                aria-label="Close"
-              >
-                <X className="h-8 w-8" />
-              </button>
-              
-              <div className="relative max-w-6xl w-full h-full flex items-center justify-center">
-                <Image
-                  src={galleryImages[currentImageIndex] || galleryImages[0]}
-                  alt={`${data.name} - Image ${currentImageIndex + 1}`}
-                  width={1200}
-                  height={800}
-                  className="max-w-full max-h-full object-contain"
-                  onClick={(e) => e.stopPropagation()}
-                  unoptimized={galleryImages[currentImageIndex]?.startsWith('http')}
-                />
-                
-                {galleryImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        prevImage();
-                      }}
-                      className="absolute left-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="h-8 w-8" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        nextImage();
-                      }}
-                      className="absolute right-4 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="h-8 w-8" />
-                    </button>
-                    
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-                      {currentImageIndex + 1} / {galleryImages.length}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
           )}
 
           {/* Informasi Kontak */}
@@ -519,14 +226,17 @@ export default function WorkshopDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {data.phone && (
+                {workshop.phone && (
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Telepon</p>
-                      {data.claimStatus === 'CLAIMED' ? (
-                        <a href={`tel:${data.phone}`} className="text-sm text-primary hover:underline">
-                          {data.phone}
+                      {workshop.claimStatus === 'CLAIMED' ? (
+                        <a
+                          href={`tel:${workshop.phone}`}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {workshop.phone}
                         </a>
                       ) : (
                         <span className="text-sm text-muted-foreground">••• ••• ••••</span>
@@ -534,19 +244,19 @@ export default function WorkshopDetailPage() {
                     </div>
                   </div>
                 )}
-                {data.mobile && (
+                {workshop.mobile && (
                   <div className="flex items-start gap-3">
                     <MessageCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Mobile / WhatsApp</p>
-                      {data.claimStatus === 'CLAIMED' && whatsappUrl ? (
+                      {workshop.claimStatus === 'CLAIMED' && whatsappUrl ? (
                         <a
                           href={whatsappUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-primary hover:underline"
                         >
-                          {data.mobile}
+                          {workshop.mobile}
                         </a>
                       ) : (
                         <span className="text-sm text-muted-foreground">••• ••• ••••</span>
@@ -554,23 +264,26 @@ export default function WorkshopDetailPage() {
                     </div>
                   </div>
                 )}
-                {data.email && (
+                {workshop.email && (
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Email</p>
-                      <a href={`mailto:${data.email}`} className="text-sm text-primary hover:underline">
-                        {data.email}
+                      <a
+                        href={`mailto:${workshop.email}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {workshop.email}
                       </a>
                     </div>
                   </div>
                 )}
-                {data.categoryName && (
+                {workshop.categoryName && (
                   <div className="flex items-start gap-3">
                     <Building2 className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Kategori</p>
-                      <p className="text-sm text-muted-foreground">{data.categoryName}</p>
+                      <p className="text-sm text-muted-foreground">{workshop.categoryName}</p>
                     </div>
                   </div>
                 )}
@@ -578,34 +291,30 @@ export default function WorkshopDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Action Buttons - WhatsApp disabled jika belum diklaim */}
+          {/* WhatsApp Button */}
           {whatsappUrl && (
             <Card>
               <CardContent className="pt-6">
-                <Button
-                  size="lg"
-                  className={cn(
-                    "w-full text-white",
-                    data.claimStatus === 'CLAIMED' 
-                      ? "bg-[#16A34A] hover:bg-[#15803D]" 
-                      : "bg-gray-400 cursor-not-allowed opacity-50"
-                  )}
-                  disabled={data.claimStatus !== 'CLAIMED'}
-                  onClick={() => {
-                    if (data.claimStatus === 'CLAIMED' && whatsappUrl) {
-                      window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
-                    }
-                  }}
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full"
                 >
-                  <MessageCircle className="h-5 w-5 mr-2" />
-                  Hubungi via WhatsApp
-                </Button>
+                  <Button
+                    size="lg"
+                    className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white"
+                  >
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    Hubungi via WhatsApp
+                  </Button>
+                </a>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Sidebar - Lokasi & Map */}
+        {/* Sidebar */}
         <div className="space-y-6">
           {/* Lokasi */}
           <Card>
@@ -617,34 +326,30 @@ export default function WorkshopDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                {data.address && (
-                  <p className="text-sm text-foreground leading-relaxed">{data.address}</p>
+                {workshop.address && (
+                  <p className="text-sm text-foreground leading-relaxed">{workshop.address}</p>
                 )}
                 <div className="flex flex-wrap gap-1 text-sm text-muted-foreground">
                   {subdistrictName && <span>{subdistrictName}</span>}
-                  {subdistrictName && (districtName || data.district) && <span>•</span>}
+                  {subdistrictName && (districtName || workshop.district) && <span>•</span>}
                   {districtName && <span>{districtName}</span>}
-                  {!districtName && data.district && <span>{data.district}</span>}
-                  {(districtName || data.district) && (cityName || data.city) && <span>•</span>}
+                  {!districtName && workshop.district && <span>{workshop.district}</span>}
+                  {(districtName || workshop.district) && (cityName || workshop.city) && (
+                    <span>•</span>
+                  )}
                   {cityName && <span>{cityName}</span>}
-                  {!cityName && data.city && <span>{data.city}</span>}
-                  {(cityName || data.city) && (provinceName || data.province) && <span>•</span>}
+                  {!cityName && workshop.city && <span>{workshop.city}</span>}
+                  {(cityName || workshop.city) && (provinceName || workshop.province) && (
+                    <span>•</span>
+                  )}
                   {provinceName && <span>{provinceName}</span>}
-                  {!provinceName && data.province && <span>{data.province}</span>}
+                  {!provinceName && workshop.province && <span>{workshop.province}</span>}
                 </div>
               </div>
 
               {mapsUrl && (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full"
-                >
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                <Button asChild variant="outline" className="w-full">
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Lihat di Google Maps
                   </a>
@@ -653,19 +358,17 @@ export default function WorkshopDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Jam Operasional */}
-          {waitingListId && (
-            <WorkingHoursDisplay waitingListId={waitingListId} />
-          )}
+          {/* Jam Operasional (client component — fetches own data) */}
+          {waitingListId && <WorkingHoursDisplay waitingListId={waitingListId} />}
 
           {/* Map Embed */}
           <Card>
             <CardContent className="p-0">
               <WorkshopMap
-                latitude={data.latitude}
-                longitude={data.longitude}
-                address={data.address}
-                name={data.name}
+                latitude={workshop.latitude}
+                longitude={workshop.longitude}
+                address={workshop.address}
+                name={workshop.name}
                 fallbackAddress={fullAddress}
               />
             </CardContent>
@@ -673,10 +376,7 @@ export default function WorkshopDetailPage() {
         </div>
       </div>
 
-      {/* Disclaimer */}
       <ListingDisclaimer />
     </main>
   );
 }
-
-
