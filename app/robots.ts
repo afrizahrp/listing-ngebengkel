@@ -18,7 +18,10 @@ export default function robots(): MetadataRoute.Robots {
             userAgent: '*',
             allow: [
               '/',
+              '/diagnosa',
+              '/bengkel',
               '/bengkel/', // Allow workshop listings
+              '/hub/', // Hub (masalah, artikel, dll.)
               '/masalah/', // Allow pain point pages
               '/artikel/', // Allow article pages
               '/workshop/', // Allow workshop detail pages

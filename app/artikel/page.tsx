@@ -21,7 +21,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function ArticlesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-  
+
   const { articles, loading, error, fetchArticles } = useArticles();
 
   useEffect(() => {
@@ -67,8 +67,8 @@ export default function ArticlesPage() {
           Panduan & Solusi Masalah Kendaraan
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Temukan panduan lengkap untuk mengatasi berbagai masalah kendaraan Anda. 
-          Dilengkapi dengan estimasi biaya dan rekomendasi bengkel terpercaya.
+          Temukan panduan lengkap untuk mengatasi berbagai masalah kendaraan kamu. Dilengkapi dengan
+          estimasi biaya dan rekomendasi bengkel terpercaya.
         </p>
       </div>
 
@@ -84,76 +84,83 @@ export default function ArticlesPage() {
               const articleSlug = article.slug?.replace(/^seasonal-/, '') || article.slug;
 
               return (
-              <Card key={article.id} className="h-full hover:shadow-xl transition-shadow duration-300 group flex flex-col">
-                <Link href={`/artikel/${articleSlug}`} className="flex-1">
-                  {/* Image */}
-                  {article.imageUrl && (
-                    <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
-                      <Image
-                        src={article.imageUrl}
-                        alt={article.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  )}
-                  
-                  <CardContent className="p-6">
-                    {/* Category Badge */}
-                    {article.painPoint?.category && (
-                      <Badge className={`mb-3 ${CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100'}`}>
-                        {article.painPoint.category}
-                      </Badge>
+                <Card
+                  key={article.id}
+                  className="h-full hover:shadow-xl transition-shadow duration-300 group flex flex-col"
+                >
+                  <Link href={`/artikel/${articleSlug}`} className="flex-1">
+                    {/* Image */}
+                    {article.imageUrl && (
+                      <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                        <Image
+                          src={article.imageUrl}
+                          alt={article.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
                     )}
 
-                    {/* Title */}
-                    <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {article.title}
-                    </h2>
+                    <CardContent className="p-6">
+                      {/* Category Badge */}
+                      {article.painPoint?.category && (
+                        <Badge
+                          className={`mb-3 ${CATEGORY_COLORS[article.painPoint.category] || 'bg-gray-100'}`}
+                        >
+                          {article.painPoint.category}
+                        </Badge>
+                      )}
 
-                    {/* Description */}
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                      {article.metaDescription}
-                    </p>
+                      {/* Title */}
+                      <h2 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                        {article.title}
+                      </h2>
 
-                    {/* Meta */}
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {new Date(article.publishedAt || article.generatedAt).toLocaleDateString('id-ID', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </span>
+                      {/* Description */}
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                        {article.metaDescription}
+                      </p>
+
+                      {/* Meta */}
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {new Date(
+                              article.publishedAt || article.generatedAt,
+                            ).toLocaleDateString('id-ID', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span>{article.viewCount || 0}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        <span>{article.viewCount || 0}</span>
-                      </div>
-                    </div>
 
-                    {/* Read More */}
-                    <div className="flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">
-                      <span>Baca Selengkapnya</span>
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </CardContent>
-                </Link>
-                
-                {/* Share Button */}
-                <div className="px-6 pb-4 border-t pt-4">
-                  <ShareButton
-                    url={`/artikel/${articleSlug}`}
-                    title={article.title}
-                    description={article.metaDescription}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                  />
-                </div>
-              </Card>
+                      {/* Read More */}
+                      <div className="flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">
+                        <span>Baca Selengkapnya</span>
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </CardContent>
+                  </Link>
+
+                  {/* Share Button */}
+                  <div className="px-6 pb-4 border-t pt-4">
+                    <ShareButton
+                      url={`/artikel/${articleSlug}`}
+                      title={article.title}
+                      description={article.metaDescription}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                    />
+                  </div>
+                </Card>
               );
             })}
           </div>

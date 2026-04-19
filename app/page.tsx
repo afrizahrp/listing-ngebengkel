@@ -1,33 +1,93 @@
-import { Suspense } from "react";
-import { CTA } from "./workshop/components/CTA";
+import type { Metadata } from 'next';
+import { OwnerConversionLanding } from './components/owner-landing/OwnerConversionLanding';
+
+const SITE = 'https://ngebengkel.com';
+
+/** Page-level SEO — selaras H1 & copy beranda owner terbaru */
+export const metadata: Metadata = {
+  title: 'Bengkel ramai tapi duit nggak jelas? | Ngebengkel untuk owner Jakarta',
+  description:
+    'Owner bengkel mobil Jakarta: servis, stok, dan angka berantakan — capek nebak untung. Ngebengkel satu alur biar kebaca jelas; ada halaman diagnosa + WA gratis tanpa paket wajib.',
+  keywords: [
+    'bengkel mobil jakarta',
+    'manajemen bengkel mobil',
+    'bengkel ramai untung tidak jelas',
+    'stok bengkel berantakan',
+    'diagnosa bengkel',
+    'operasional bengkel',
+    'pertumbuhan bengkel',
+    'software bengkel',
+    'laporan bengkel',
+    'ngebengkel',
+    'ngebengkel.com',
+  ],
+  robots: { index: true, follow: true },
+  alternates: {
+    canonical: SITE,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    url: SITE,
+    siteName: 'Ngebengkel.com',
+    title: 'Bengkel ramai tapi duit nggak jelas? | Ngebengkel',
+    description:
+      'Servis, stok, angka rapi satu alur. Owner bengkel mobil Jakarta — cek /diagnosa, lanjut WA gratis.',
+    images: [
+      {
+        url: `${SITE}/logo-circle.webp`,
+        width: 1200,
+        height: 630,
+        alt: 'Ngebengkel — manajemen & operasional bengkel mobil',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bengkel ramai tapi duit nggak jelas? | Ngebengkel',
+    description:
+      'Satu alur servis–stok–uang. Owner Jakarta — diagnosa singkat, WA gratis.',
+    images: [`${SITE}/logo-circle.webp`],
+    creator: '@ngebengkel',
+    site: '@ngebengkel',
+  },
+};
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE}/#organization`,
+      name: 'Ngebengkel.com',
+      url: SITE,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE}/logo-circle.webp`,
+      },
+    },
+    {
+      '@type': 'WebPage',
+      '@id': `${SITE}/#webpage`,
+      url: SITE,
+      name: 'Bengkel ramai tapi duit nggak jelas? | Ngebengkel untuk owner Jakarta',
+      description:
+        'Owner bengkel mobil Jakarta: servis, stok, dan angka berantakan. Ngebengkel nyambungin ke satu alur; lanjut /diagnosa dan WA tanpa komit.',
+      isPartOf: { '@type': 'WebSite', url: SITE, name: 'Ngebengkel.com' },
+      publisher: { '@id': `${SITE}/#organization` },
+    },
+  ],
+};
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      {/* Breadcrumb Navigation */}
-      {/* <div className="mx-auto w-full max-w-5xl px-4 pt-8 sm:px-6 lg:px-0">
-        <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Link
-            href="/hub/masalah"
-            className="hover:text-foreground transition-colors flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100"
-          >
-            <AlertCircle className="h-4 w-4" />
-            <span>Masalah Kendaraan</span>
-          </Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link
-            href="/hub/artikel"
-            className="hover:text-foreground transition-colors flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100"
-          >
-            <FileText className="h-4 w-4" />
-            <span>Artikel & Panduan</span>
-          </Link>
-        </nav>
-      </div> */}
-
-      <Suspense fallback={<div>Loading...</div>}>
-        <CTA variant="section" />
-      </Suspense>
-    </main>
+    <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger -- JSON-LD standar untuk SEO
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <OwnerConversionLanding />
+    </>
   );
 }
